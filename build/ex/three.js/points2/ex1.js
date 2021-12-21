@@ -8,6 +8,9 @@ let renderer;
 let points;
 let controls;
 
+init();
+animate();
+
 function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
@@ -62,6 +65,3 @@ function onWindowResize() {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
-
-init();
-animate();

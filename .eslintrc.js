@@ -13,5 +13,6 @@ module.exports = {
   rules: {
     'import/extensions': ['off'],
     'no-plusplus': ['off'],
+    'no-use-before-define': ['off'],
   },
 };
