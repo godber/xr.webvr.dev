@@ -50,12 +50,12 @@ async function init() {
 
   const vertices = [];
 
-  for (let i = 0; i < tristogram.length; i++) {
-    for (let j = 0; j < tristogram[i].length; j++) {
-      for (let k = 0; k < tristogram[j].length; k++) {
-        if (tristogram[i][j][k] !== 0) {
+  for (let r = 0; r < tristogram.length; r++) {
+    for (let g = 0; g < tristogram[r].length; g++) {
+      for (let b = 0; b < tristogram[g].length; b++) {
+        if (tristogram[r][g][b] !== 0) {
           nonZeroCount++;
-          vertices.push(i, j, k);
+          vertices.push(r, g, b);
           // TODO: use the value at this point to do something ... set grayscale
         }
         totalCount++;
