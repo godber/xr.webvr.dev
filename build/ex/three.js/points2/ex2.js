@@ -1,6 +1,7 @@
 import * as THREE from './js/three.module.js';
 import { VRButton } from './jsm/webxr/VRButton.js';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
+import { Tristogram } from './js/lib-ex2.js';
 
 let camera;
 let scene;
@@ -15,23 +16,12 @@ try {
 animate();
 
 async function init() {
-  let tristogram;
-
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-
-  // create a 256x256x256 array full of zeros
-  tristogram = Array(256).fill().map(
-    () => Array(256).fill().map(
-      () => Array(256).fill(0),
-    ),
-  );
 
   // populate the tristogram
   const loader = new THREE.TextureLoader();
   const imgUrl = 'https://raw.githubusercontent.com/desertpy/presentations/master/exploring-numpy-godber/wallaby_746_600x450.jpg';
-  let totalCount = 0;
-  let nonZeroCount = 0;
 
   let texture;
   try {
@@ -40,33 +30,12 @@ async function init() {
     console.error(error);
   }
 
-  const image = getImageData(texture.image);
-  for (let x = 0; x < image.width; x++) {
-    for (let y = 0; y < image.height; y++) {
-      const p = getPixel(image, x, y);
-      tristogram[p.r][p.g][p.b] += 1;
-    }
-  }
+  const tristogram = new Tristogram(texture.image);
 
-  const vertices = [];
-
-  for (let r = 0; r < tristogram.length; r++) {
-    for (let g = 0; g < tristogram[r].length; g++) {
-      for (let b = 0; b < tristogram[g].length; b++) {
-        if (tristogram[r][g][b] !== 0) {
-          nonZeroCount++;
-          vertices.push(r, g, b);
-          // TODO: use the value at this point to do something ... set grayscale
-        }
-        totalCount++;
-      }
-    }
-  }
-
-  console.log(`totalCount: ${totalCount}, nonZeroCount: ${nonZeroCount}`);
+  console.log(`totalCount: ${tristogram.totalCount}, nonZeroCount: ${tristogram.nonZeroCount}`);
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.vertices, 3));
 
   const material = new THREE.PointsMaterial(
     { color: 0xffffff, size: 5 },
@@ -104,27 +73,4 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function getImageData(image) {
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
-
-  const context = canvas.getContext('2d');
-  context.drawImage(image, 0, 0);
-  return context.getImageData(0, 0, image.width, image.height);
-}
-
-// call with image.data from getImageData
-function getPixel(imageData, x, y) {
-  const position = (x + imageData.width * y) * 4;
-  const { data } = imageData;
-  const pixel = {
-    r: data[position],
-    g: data[position + 1],
-    b: data[position + 2],
-    a: data[position + 3],
-  };
-  return pixel;
 }
