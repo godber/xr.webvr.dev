@@ -17,7 +17,14 @@ animate();
 
 async function init() {
   scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111111);
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+  camera.position.x = 100;
+  camera.position.y = 100;
+  camera.position.z = 500;
+  scene.add(camera);
+  const axesHelper = new THREE.AxesHelper(256);
+  scene.add(axesHelper);
 
   // populate the tristogram
   const loader = new THREE.TextureLoader();
@@ -32,19 +39,16 @@ async function init() {
 
   const tristogram = new Tristogram(texture.image);
 
-  console.log(`totalCount: ${tristogram.totalCount}, nonZeroCount: ${tristogram.nonZeroCount}`);
-
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.vertices, 3));
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 3));
 
   const material = new THREE.PointsMaterial(
-    { color: 0xffffff, size: 5 },
+    { size: 1, vertexColors: true },
   );
   points = new THREE.Points(geometry, material);
 
   scene.add(points);
-
-  camera.position.z = 2500;
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -57,10 +61,6 @@ async function init() {
 }
 
 function render() {
-  const time = Date.now() * 0.0001;
-
-  points.rotation.x = time * 0.25;
-  points.rotation.y = time * 0.5;
   renderer.render(scene, camera);
 }
 
