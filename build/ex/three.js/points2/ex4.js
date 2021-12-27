@@ -9,19 +9,14 @@ import * as THREE from './js/three.module.js';
 import { VRButton } from './jsm/webxr/VRButton.js';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
 import { GUI } from './jsm/libs/lil-gui.module.min.js';
-import { Tristogram } from './js/lib-ex2.js';
+import { Tristogram } from './js/lib-ex4.js';
 
 let camera;
 let scene;
+let loader;
 let renderer;
 let points;
 let material;
-
-// const imageUrls = {
-//   rainbow: '/images/rainbow.png',
-//   grayscale: '/images/grayscale.png',
-//   wallaby: '/images/wallaby_746_600x450.jpg',
-// };
 
 const guiSettings = {
   displayImage: true,
@@ -39,17 +34,54 @@ animate();
 
 function guiInit() {
   const gui = new GUI();
-  gui.add(guiSettings, 'displayImage')
-  gui.add(guiSettings, 'image', [
-    '/images/rainbow.png',
-    '/images/grayscale.png',
-    '/images/wallaby_746_600x450.jpg',
-  ]);
+  gui.add(guiSettings, 'displayImage');
+  // TODO: fix image selection (requires refactoring)
+  gui.add(guiSettings, 'image', {
+    rainbow: '/images/rainbow.png',
+    gray: '/images/grayscale.png',
+    wallaby: '/images/wallaby_746_600x450.jpg',
+  });
   gui.add(guiSettings, 'pointSize', 0, 20, 1);
   gui.addColor(guiSettings, 'background');
 }
 
+// TODO: rename, refactor, maybe this should be a three.js specific subclass of Tristogram
+async function doImage(imgUrl) {
+  let texture;
+  try {
+    texture = await loader.loadAsync(imgUrl);
+  } catch (error) {
+    console.error(error);
+  }
+
+  const tristogram = new Tristogram(texture.image);
+
+  // Tristogram Object
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 3));
+  material = new THREE.PointsMaterial(
+    { size: guiSettings.pointSize, vertexColors: true },
+  );
+  points = new THREE.Points(geometry, material);
+  points.layers.set(0);
+  scene.add(points);
+
+  // Image Object
+  const imgDisplayHeight = 256;
+  const imgDisplayWidth = imgDisplayHeight * (texture.image.width / texture.image.height);
+  const imgGeometry = new THREE.PlaneGeometry(imgDisplayWidth, imgDisplayHeight);
+  const imgMaterial = new THREE.MeshBasicMaterial({ map: texture });
+  const imgMesh = new THREE.Mesh(imgGeometry, imgMaterial);
+  imgMesh.layers.set(1);
+  imgMesh.position.x = -imgDisplayWidth / 2 - 50;
+  imgMesh.position.y = imgDisplayHeight / 2;
+  scene.add(imgMesh);
+}
+
 async function init() {
+  loader = new THREE.TextureLoader();
+
   scene = new THREE.Scene();
   scene.background = new THREE.Color(guiSettings.background);
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
@@ -65,40 +97,11 @@ async function init() {
   guiInit();
 
   // populate the tristogram
-  const loader = new THREE.TextureLoader();
   // const imgUrl = '/images/grayscale.png';
   // const imgUrl = '/images/rainbow.png';
-  const imgUrl = '/images/wallaby_746_600x450.jpg';
-
-  let texture;
-  try {
-    texture = await loader.loadAsync(imgUrl);
-  } catch (error) {
-    console.error(error);
-  }
-
-  const tristogram = new Tristogram(texture.image);
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 3));
-
-  material = new THREE.PointsMaterial(
-    { size: guiSettings.pointSize, vertexColors: true },
-  );
-  points = new THREE.Points(geometry, material);
-  points.layers.set(0);
-  scene.add(points);
-
-  const imgDisplayHeight = 256;
-  const imgDisplayWidth = imgDisplayHeight * texture.image.width/texture.image.height
-  const imgGeometry = new THREE.PlaneGeometry( imgDisplayWidth, imgDisplayHeight );
-  const imgMaterial = new THREE.MeshBasicMaterial( { map: texture } );
-  const imgMesh = new THREE.Mesh( imgGeometry, imgMaterial );
-  imgMesh.layers.set(1);
-  imgMesh.position.x = - imgDisplayWidth/2 - 50;
-  imgMesh.position.y = imgDisplayHeight/2;
-  scene.add( imgMesh );
+  const imgUrl = guiSettings.image;
+  // console.log(`imgUrl ${guiSettings.image}`);
+  await doImage(imgUrl);
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);

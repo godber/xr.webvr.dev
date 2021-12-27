@@ -2,7 +2,7 @@ import * as THREE from './js/three.module.js';
 import { VRButton } from './jsm/webxr/VRButton.js';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
 import { GUI } from './jsm/libs/lil-gui.module.min.js';
-import { Tristogram } from './js/lib-ex2.js';
+import { Tristogram } from './js/lib-ex3.js';
 
 let camera;
 let scene;

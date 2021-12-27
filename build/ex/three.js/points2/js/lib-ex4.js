@@ -1,5 +1,3 @@
-import * as THREE from './three.module.js';
-
 class Tristogram {
   constructor(image) {
     this.nonZeroCount = 0;
