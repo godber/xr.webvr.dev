@@ -1,3 +1,10 @@
+/* TODO
+ *  - Select Image from list
+ *  - Provide Image (drag and drop, or URL box)
+ *  - LUT https://github.com/mrdoob/three.js/blob/master/examples/webgl_geometry_colors_lookuptable.html
+ *
+ */
+
 import * as THREE from './js/three.module.js';
 import { VRButton } from './jsm/webxr/VRButton.js';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
@@ -17,6 +24,7 @@ let material;
 // };
 
 const guiSettings = {
+  displayImage: true,
   image: '/images/wallaby_746_600x450.jpg',
   background: 0x111111,
   pointSize: 1,
@@ -31,6 +39,7 @@ animate();
 
 function guiInit() {
   const gui = new GUI();
+  gui.add(guiSettings, 'displayImage')
   gui.add(guiSettings, 'image', [
     '/images/rainbow.png',
     '/images/grayscale.png',
@@ -44,9 +53,11 @@ async function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(guiSettings.background);
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-  camera.position.x = 100;
-  camera.position.y = 100;
-  camera.position.z = 500;
+  camera.position.x = -200;
+  camera.position.y = 200;
+  camera.position.z = 450;
+  camera.layers.enable(0);
+  camera.layers.enable(1);
   scene.add(camera);
   const axesHelper = new THREE.AxesHelper(256);
   scene.add(axesHelper);
@@ -55,9 +66,9 @@ async function init() {
 
   // populate the tristogram
   const loader = new THREE.TextureLoader();
-  const imgUrl = '/images/grayscale.png';
+  // const imgUrl = '/images/grayscale.png';
   // const imgUrl = '/images/rainbow.png';
-  // const imgUrl = '/images/wallaby_746_600x450.jpg';
+  const imgUrl = '/images/wallaby_746_600x450.jpg';
 
   let texture;
   try {
@@ -76,8 +87,18 @@ async function init() {
     { size: guiSettings.pointSize, vertexColors: true },
   );
   points = new THREE.Points(geometry, material);
-
+  points.layers.set(0);
   scene.add(points);
+
+  const imgDisplayHeight = 256;
+  const imgDisplayWidth = imgDisplayHeight * texture.image.width/texture.image.height
+  const imgGeometry = new THREE.PlaneGeometry( imgDisplayWidth, imgDisplayHeight );
+  const imgMaterial = new THREE.MeshBasicMaterial( { map: texture } );
+  const imgMesh = new THREE.Mesh( imgGeometry, imgMaterial );
+  imgMesh.layers.set(1);
+  imgMesh.position.x = - imgDisplayWidth/2 - 50;
+  imgMesh.position.y = imgDisplayHeight/2;
+  scene.add( imgMesh );
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -92,6 +113,11 @@ async function init() {
 function render() {
   material.size = guiSettings.pointSize;
   scene.background = new THREE.Color(guiSettings.background);
+  if (guiSettings.displayImage === true) {
+    camera.layers.enable(1);
+  } else if (guiSettings.displayImage === false) {
+    camera.layers.disable(1);
+  }
   renderer.render(scene, camera);
 }
 
