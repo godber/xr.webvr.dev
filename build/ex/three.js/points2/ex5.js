@@ -15,8 +15,8 @@ let camera;
 let scene;
 let loader;
 let renderer;
-let points;
-let material;
+let pointsMesh;
+let pointsMaterial;
 
 const guiSettings = {
   displayImage: true,
@@ -47,39 +47,46 @@ function guiInit() {
 
 // TODO: rename, refactor, maybe this should be a three.js specific subclass of Tristogram
 async function doImage(imgUrl) {
-  let texture;
+  let sourceImageTexture;
   try {
-    texture = await loader.loadAsync(imgUrl);
+    sourceImageTexture = await loader.loadAsync(imgUrl);
   } catch (error) {
     console.error(error);
   }
 
-  const tristogram = new Tristogram(texture.image);
+  const tristogram = new Tristogram(sourceImageTexture.image);
 
   // Tristogram Object
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 3));
-  material = new THREE.PointsMaterial(
+  const pointsGeometry = new THREE.BufferGeometry();
+  pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
+  pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 3));
+  pointsMaterial = new THREE.PointsMaterial(
     { size: guiSettings.pointSize, vertexColors: true },
   );
-  points = new THREE.Points(geometry, material);
-  points.layers.set(0);
-  scene.add(points);
+  pointsMesh = new THREE.Points(pointsGeometry, pointsMaterial);
+  pointsMesh.layers.set(0);
+  scene.add(pointsMesh);
 
   // Image Object
   const imgDisplayHeight = 256;
-  const imgDisplayWidth = imgDisplayHeight * (texture.image.width / texture.image.height);
+  const imgDisplayWidth = imgDisplayHeight
+    * (sourceImageTexture.image.width / sourceImageTexture.image.height);
   const imgGeometry = new THREE.PlaneGeometry(imgDisplayWidth, imgDisplayHeight);
-  const imgMaterial = new THREE.MeshBasicMaterial({ map: texture });
-  const imgMesh = new THREE.Mesh(imgGeometry, imgMaterial);
-  imgMesh.layers.set(1);
-  imgMesh.position.x = -imgDisplayWidth / 2 - 50;
-  imgMesh.position.y = imgDisplayHeight / 2;
-  scene.add(imgMesh);
+  const imgMaterial = new THREE.MeshBasicMaterial({ map: sourceImageTexture });
+  const imageMesh = new THREE.Mesh(imgGeometry, imgMaterial);
+  imageMesh.layers.set(1);
+  imageMesh.position.x = -imgDisplayWidth / 2 - 50;
+  imageMesh.position.y = imgDisplayHeight / 2;
+  scene.add(imageMesh);
 }
 
 async function init() {
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+  document.body.appendChild(renderer.domElement);
+  document.body.appendChild(VRButton.createButton(renderer));
+
   loader = new THREE.TextureLoader();
 
   scene = new THREE.Scene();
@@ -94,6 +101,10 @@ async function init() {
   const axesHelper = new THREE.AxesHelper(256);
   scene.add(axesHelper);
 
+  // eslint-disable-next-line no-new
+  new OrbitControls(camera, renderer.domElement);
+  window.addEventListener('resize', onWindowResize);
+
   guiInit();
 
   // populate the tristogram
@@ -102,20 +113,16 @@ async function init() {
   const imgUrl = guiSettings.image;
   // console.log(`imgUrl ${guiSettings.image}`);
   await doImage(imgUrl);
-
-  renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = true;
-  document.body.appendChild(renderer.domElement);
-  document.body.appendChild(VRButton.createButton(renderer));
-  // eslint-disable-next-line no-new
-  new OrbitControls(camera, renderer.domElement);
-  window.addEventListener('resize', onWindowResize);
 }
 
 function render() {
-  material.size = guiSettings.pointSize;
+  // Change Point Sizes
+  pointsMaterial.size = guiSettings.pointSize;
+
+  // Change the Background Color
   scene.background = new THREE.Color(guiSettings.background);
+
+  // Toggle the Image Display
   if (guiSettings.displayImage === true) {
     camera.layers.enable(1);
   } else if (guiSettings.displayImage === false) {
