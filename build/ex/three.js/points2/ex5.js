@@ -15,6 +15,7 @@ let camera;
 let scene;
 let renderer;
 let tristogram;
+let oldImage;
 
 const guiSettings = {
   displayImage: true,
@@ -69,15 +70,23 @@ async function init() {
 
   // populate the tristogram
   tristogram = new ThreeTristogram(scene, guiSettings);
+  oldImage = guiSettings.image;
   await tristogram.load(guiSettings.image);
 }
 
-function render() {
+async function render() {
   // Change Point Sizes
   tristogram.pointsMaterial.size = guiSettings.pointSize;
 
   // Change the Background Color
   scene.background = new THREE.Color(guiSettings.background);
+
+  // FIXME: Kind of works, the old things need deleting.
+  if (guiSettings.image !== oldImage) {
+    console.log(`image changed to ${guiSettings.image}`);
+    oldImage = guiSettings.image;
+    await tristogram.load(guiSettings.image);
+  }
 
   // Toggle the Image Display
   if (guiSettings.displayImage === true) {
