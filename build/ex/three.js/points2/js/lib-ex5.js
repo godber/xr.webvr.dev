@@ -1,3 +1,8 @@
+/* eslint-disable max-classes-per-file */
+
+// Needed by ThreeTristogram
+import * as THREE from './three.module.js';
+
 class Tristogram {
   constructor(image) {
     this.nonZeroCount = 0;
@@ -84,5 +89,47 @@ class Tristogram {
   }
 }
 
+class ThreeTristogram {
+  constructor(scene, settings) {
+    this.scene = scene;
+    this.settings = settings;
+  }
+
+  async load(imageUrl) {
+    let sourceImageTexture;
+    const loader = new THREE.TextureLoader();
+
+    try {
+      sourceImageTexture = await loader.loadAsync(imageUrl);
+    } catch (error) {
+      console.error(error);
+    }
+    const tristogram = new Tristogram(sourceImageTexture.image);
+
+    // Tristogram Object
+    const pointsGeometry = new THREE.BufferGeometry();
+    pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
+    pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 3));
+    this.pointsMaterial = new THREE.PointsMaterial(
+      { size: this.settings.pointSize, vertexColors: true },
+    );
+    const pointsMesh = new THREE.Points(pointsGeometry, this.pointsMaterial);
+    pointsMesh.layers.set(0);
+    this.scene.add(pointsMesh);
+
+    // Image Object
+    const imgDisplayHeight = 256;
+    const imgDisplayWidth = imgDisplayHeight
+      * (sourceImageTexture.image.width / sourceImageTexture.image.height);
+    const imgGeometry = new THREE.PlaneGeometry(imgDisplayWidth, imgDisplayHeight);
+    const imgMaterial = new THREE.MeshBasicMaterial({ map: sourceImageTexture });
+    const imageMesh = new THREE.Mesh(imgGeometry, imgMaterial);
+    imageMesh.layers.set(1);
+    imageMesh.position.x = -imgDisplayWidth / 2 - 50;
+    imageMesh.position.y = imgDisplayHeight / 2;
+    this.scene.add(imageMesh);
+  }
+}
+
 // eslint-disable-next-line import/prefer-default-export
-export { Tristogram };
+export { Tristogram, ThreeTristogram };
