@@ -39,6 +39,9 @@ function guiInit() {
   gui.add(guiSettings, 'image', {
     rainbow: '/images/rainbow.png',
     gray: '/images/grayscale.png',
+    blue: '/images/blue-black-gradient.png',
+    green: '/images/green-black-gradient.png',
+    red: '/images/red-black-gradient.png',
     wallaby: '/images/wallaby_746_600x450.jpg',
   });
   gui.add(guiSettings, 'pointSize', 0, 20, 1);
