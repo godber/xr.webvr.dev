@@ -96,7 +96,6 @@ class ThreeTristogram {
   }
 
   dispose() {
-    console.log(`disposing`);
     this.pointsGeometry.dispose();
     this.pointsMaterial.dispose();
     this.scene.remove(this.pointsMesh);

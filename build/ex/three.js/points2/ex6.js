@@ -17,6 +17,7 @@ let scene;
 let renderer;
 let tristogram;
 let oldImage;
+const canvas = document.querySelector('canvas.webgl');
 
 const guiSettings = {
   displayImage: true,
@@ -49,10 +50,9 @@ function guiInit() {
 }
 
 async function init() {
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ canvas });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
-  document.body.appendChild(renderer.domElement);
   document.body.appendChild(VRButton.createButton(renderer));
 
   scene = new THREE.Scene();
