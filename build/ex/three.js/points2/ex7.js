@@ -37,6 +37,13 @@ function guiInit() {
   const gui = new GUI();
   gui.add(guiSettings, 'displayImage');
   gui.add(guiSettings, 'image', {
+    glitchGray: '/images/glitch-art-phone-gray.jpg',
+    glitchRed: '/images/glitch-art-phone-r.jpg',
+    glitchRB: '/images/glitch-art-phone-rb.jpg',
+    glitchRGB: '/images/glitch-art-phone-rbg.jpg',
+    glitchR: '/images/glitch-art-phone-red.jpg',
+    godberGlitch: '/images/godber-glitch.jpg',
+    godber: '/images/godber.jpg',
     rainbow: '/images/rainbow.png',
     gray: '/images/grayscale.png',
     blue: '/images/blue-black-gradient.png',

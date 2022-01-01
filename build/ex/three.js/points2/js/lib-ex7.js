@@ -121,9 +121,12 @@ class ThreeTristogram {
     this.pointsGeometry = new THREE.BufferGeometry();
     this.pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));
     this.pointsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(tristogram.colors, 4));
-    this.pointsMaterial = new THREE.PointsMaterial(
-      { size: this.settings.pointSize, vertexColors: true, transparent: true },
-    );
+    this.pointsMaterial = new THREE.PointsMaterial({
+      size: this.settings.pointSize,
+      vertexColors: true,
+      transparent: true,
+      sizeAttenuation: true,
+    });
     this.pointsMesh = new THREE.Points(this.pointsGeometry, this.pointsMaterial);
     this.pointsMesh.layers.set(0);
     this.scene.add(this.pointsMesh);
