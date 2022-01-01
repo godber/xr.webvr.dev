@@ -18,6 +18,8 @@ let renderer;
 let tristogram;
 let oldImage;
 const canvas = document.querySelector('canvas.webgl');
+canvas.ondrop = dropHandler;
+canvas.ondragover = dragOverHandler;
 
 const guiSettings = {
   displayImage: true,
@@ -111,4 +113,30 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function dropHandler(ev) {
+  // Prevent default behavior (Prevent file from being opened)
+  ev.preventDefault();
+
+  if (ev.dataTransfer.items) {
+    // Use DataTransferItemList interface to access the file(s)
+    for (let i = 0; i < ev.dataTransfer.items.length; i++) {
+      // If dropped items aren't files, reject them
+      if (ev.dataTransfer.items[i].kind === 'file') {
+        const file = ev.dataTransfer.items[i].getAsFile();
+        guiSettings.image = URL.createObjectURL(file);
+      }
+    }
+  } else {
+    // Use DataTransfer interface to access the file(s)
+    for (let i = 0; i < ev.dataTransfer.files.length; i++) {
+      console.log(`... file[${i}].name = ${ev.dataTransfer.files[i].name}`);
+    }
+  }
+}
+
+function dragOverHandler(ev) {
+  // Prevent default behavior (Prevent file from being opened)
+  ev.preventDefault();
 }
