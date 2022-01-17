@@ -11,6 +11,7 @@ import { GUI } from './jsm/libs/lil-gui.module.min.js';
 import { ThreeTristogram } from './js/lib-ex8.js';
 
 let camera;
+let cameraGroup;
 let scene;
 let renderer;
 let tristogram;
@@ -20,7 +21,6 @@ canvas.ondrop = dropHandler;
 canvas.ondragover = dragOverHandler;
 
 const guiSettings = {
-  displayImage: true,
   image: '/images/wallaby_746_600x450.jpg',
   background: 0x111111,
   pointSize: 1,
@@ -35,7 +35,6 @@ animate();
 
 function guiInit() {
   const gui = new GUI();
-  gui.add(guiSettings, 'displayImage');
   gui.add(guiSettings, 'image', {
     glitchGray: '/images/glitch-art-phone-gray.jpg',
     glitchRed: '/images/glitch-art-phone-r.jpg',
@@ -56,6 +55,7 @@ function guiInit() {
 }
 
 async function init() {
+  cameraGroup = new THREE.Group();
   renderer = new THREE.WebGLRenderer({ canvas });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.xr.enabled = true;
@@ -64,12 +64,8 @@ async function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(guiSettings.background);
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-  const cameraGroup = new THREE.Group();
   cameraGroup.add(camera);
-  // camera.position.set(-200, 200, 450);
   cameraGroup.position.set(-200, 200, 450);
-  camera.layers.enable(0);
-  camera.layers.enable(1);
   scene.add(cameraGroup);
 
   const axesHelper = new THREE.AxesHelper(256);
@@ -102,12 +98,6 @@ async function render() {
     await tristogram.load(guiSettings.image);
   }
 
-  // Toggle the Image Display
-  if (guiSettings.displayImage === true) {
-    camera.layers.enable(1);
-  } else if (guiSettings.displayImage === false) {
-    camera.layers.disable(1);
-  }
   renderer.render(scene, camera);
 }
 

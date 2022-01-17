@@ -129,7 +129,6 @@ class ThreeTristogram {
       blending: THREE.AdditiveBlending,
     });
     this.pointsMesh = new THREE.Points(this.pointsGeometry, this.pointsMaterial);
-    this.pointsMesh.layers.set(0);
     this.scene.add(this.pointsMesh);
 
     // Image Object
@@ -139,7 +138,6 @@ class ThreeTristogram {
     this.imageGeometry = new THREE.PlaneGeometry(imgDisplayWidth, imgDisplayHeight);
     this.imageMaterial = new THREE.MeshBasicMaterial({ map: sourceImageTexture });
     this.imageMesh = new THREE.Mesh(this.imageGeometry, this.imageMaterial);
-    this.imageMesh.layers.set(1);
     this.imageMesh.position.x = -imgDisplayWidth / 2 - 50;
     this.imageMesh.position.y = imgDisplayHeight / 2;
     this.scene.add(this.imageMesh);
