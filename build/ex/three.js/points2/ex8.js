@@ -68,9 +68,6 @@ async function init() {
   cameraGroup.position.set(-200, 200, 450);
   scene.add(cameraGroup);
 
-  const axesHelper = new THREE.AxesHelper(256);
-  scene.add(axesHelper);
-
   // eslint-disable-next-line no-new
   new OrbitControls(camera, renderer.domElement);
   window.addEventListener('resize', onWindowResize);

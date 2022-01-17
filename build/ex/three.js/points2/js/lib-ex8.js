@@ -141,6 +141,10 @@ class ThreeTristogram {
     this.imageMesh.position.x = -imgDisplayWidth / 2 - 50;
     this.imageMesh.position.y = imgDisplayHeight / 2;
     this.scene.add(this.imageMesh);
+
+    // Axes Object
+    const axesHelper = new THREE.AxesHelper(256);
+    this.scene.add(axesHelper);
   }
 }
 
