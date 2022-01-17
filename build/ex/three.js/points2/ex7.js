@@ -20,7 +20,6 @@ canvas.ondrop = dropHandler;
 canvas.ondragover = dragOverHandler;
 
 const guiSettings = {
-  displayImage: true,
   image: '/images/wallaby_746_600x450.jpg',
   background: 0x111111,
   pointSize: 1,
@@ -35,7 +34,6 @@ animate();
 
 function guiInit() {
   const gui = new GUI();
-  gui.add(guiSettings, 'displayImage');
   gui.add(guiSettings, 'image', {
     glitchGray: '/images/glitch-art-phone-gray.jpg',
     glitchRed: '/images/glitch-art-phone-r.jpg',
@@ -65,8 +63,6 @@ async function init() {
   scene.background = new THREE.Color(guiSettings.background);
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
   camera.position.set(-200, 200, 450);
-  camera.layers.enable(0);
-  camera.layers.enable(1);
   scene.add(camera);
 
   const axesHelper = new THREE.AxesHelper(256);
@@ -99,12 +95,6 @@ async function render() {
     await tristogram.load(guiSettings.image);
   }
 
-  // Toggle the Image Display
-  if (guiSettings.displayImage === true) {
-    camera.layers.enable(1);
-  } else if (guiSettings.displayImage === false) {
-    camera.layers.disable(1);
-  }
   renderer.render(scene, camera);
 }
 
