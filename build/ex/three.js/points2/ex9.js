@@ -7,6 +7,7 @@
 import * as THREE from './js/three.module.js';
 import { VRButton } from './jsm/webxr/VRButton.js';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
+import { TransformControls } from './jsm/controls/TransformControls.js';
 import { GUI } from './jsm/libs/lil-gui.module.min.js';
 import { ThreeTristogram } from './js/lib-ex9.js';
 
@@ -64,18 +65,53 @@ async function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(guiSettings.background);
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-  cameraGroup.add(camera);
-  cameraGroup.position.set(-200, 200, 450);
-  scene.add(cameraGroup);
+
+  // Swap this with the camera group code below to enable VR positioning
+  camera.position.set(-200, 200, 450);
+  scene.add(camera);
+  // cameraGroup.add(camera);
+  // cameraGroup.position.set(-200, 200, 450);
+  // scene.add(cameraGroup);
 
   // eslint-disable-next-line no-new
-  new OrbitControls(camera, renderer.domElement);
+  const orbit = new OrbitControls(camera, renderer.domElement);
   window.addEventListener('resize', onWindowResize);
 
+  // Selector Object
+  const selectorGeometry = new THREE.BoxGeometry(50, 50, 50);
+  const selectorMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    wireframe: true,
+  });
+  const selectorMesh = new THREE.Mesh(selectorGeometry, selectorMaterial);
+  selectorMesh.position.set(128, 128, 128);
+  scene.add(selectorMesh);
+
+  const control = new TransformControls(
+    camera,
+    renderer.domElement,
+  );
+
+  control.addEventListener('dragging-changed', (event) => {
+    orbit.enabled = !event.value;
+  });
+  control.attach(selectorMesh);
+  scene.add(control);
+
   guiInit();
+  control.addEventListener('change', render);
 
   // populate the tristogram
-  tristogram = new ThreeTristogram(scene, guiSettings);
+  tristogram = new ThreeTristogram(
+    {
+      camera,
+      renderer,
+      scene,
+      render,
+    },
+    guiSettings,
+  );
+
   oldImage = guiSettings.image;
   await tristogram.load(guiSettings.image);
 }

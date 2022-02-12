@@ -91,19 +91,19 @@ class Tristogram {
 }
 
 class ThreeTristogram {
-  constructor(scene, settings) {
-    this.scene = scene;
+  constructor(sceneObject, settings) {
+    this.sceneObject = sceneObject;
     this.settings = settings;
   }
 
   dispose() {
     this.pointsGeometry.dispose();
     this.pointsMaterial.dispose();
-    this.scene.remove(this.pointsMesh);
+    this.sceneObject.scene.remove(this.pointsMesh);
 
     this.imageGeometry.dispose();
     this.imageMaterial.dispose();
-    this.scene.remove(this.imageMesh);
+    this.sceneObject.scene.remove(this.imageMesh);
   }
 
   async load(imageUrl) {
@@ -129,7 +129,7 @@ class ThreeTristogram {
       blending: THREE.AdditiveBlending,
     });
     this.pointsMesh = new THREE.Points(this.pointsGeometry, this.pointsMaterial);
-    this.scene.add(this.pointsMesh);
+    this.sceneObject.scene.add(this.pointsMesh);
 
     // Image Object
     const imgDisplayHeight = 256;
@@ -140,11 +140,11 @@ class ThreeTristogram {
     this.imageMesh = new THREE.Mesh(this.imageGeometry, this.imageMaterial);
     this.imageMesh.position.x = -imgDisplayWidth / 2 - 50;
     this.imageMesh.position.y = imgDisplayHeight / 2;
-    this.scene.add(this.imageMesh);
+    this.sceneObject.scene.add(this.imageMesh);
 
     // Axes Object
     const axesHelper = new THREE.AxesHelper(256);
-    this.scene.add(axesHelper);
+    this.sceneObject.scene.add(axesHelper);
   }
 }
 
