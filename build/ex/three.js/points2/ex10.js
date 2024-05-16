@@ -9,7 +9,7 @@ import { VRButton } from './jsm/webxr/VRButton.js';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
 import { TransformControls } from './jsm/controls/TransformControls.js';
 import { GUI } from './jsm/libs/lil-gui.module.min.js';
-import { ThreeTristogram } from './js/lib-ex9.js';
+import { ThreeTristogram } from './js/lib-ex10.js';
 
 let camera;
 let cameraGroup;
