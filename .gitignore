@@ -14,3 +14,4 @@ node_modules/*
 
 tristogram/node_modules
 tristogram/dist
+tristogram/coverage
