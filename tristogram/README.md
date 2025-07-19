@@ -1,14 +1,16 @@
 # Tristogram
 
-A 3D color histogram visualization tool that creates interactive point clouds representing color distribution in images.
+A 3D color histogram visualization tool built with React Three Fiber that creates interactive point clouds representing color distribution in images.
 
 ## Features
 
 - **3D Color Space Visualization**: Displays colors as points in a 3D RGB cube (256x256x256)
-- **Interactive Controls**: Rotate, zoom, and pan around the color histogram
+- **React Three Fiber Integration**: Modern React declarative 3D scene composition
+- **Interactive Controls**: Rotate, zoom, and pan around the color histogram using OrbitControls
 - **Multiple Image Support**: Built-in gallery of test images plus drag-and-drop support
-- **Real-time Adjustments**: Modify point size and background color on the fly
+- **Real-time Adjustments**: Modify point size and background color using Leva GUI controls
 - **Source Image Display**: Shows the original image alongside the 3D histogram
+- **Component-based Architecture**: Clean React components with proper state management
 
 ## How It Works
 
@@ -38,17 +40,29 @@ Each point's opacity corresponds to how frequently that color appears in the ima
 
 ## Controls
 
-- **Mouse**: Orbit around the visualization
+- **Mouse**: Orbit around the visualization (via OrbitControls)
 - **Scroll**: Zoom in/out
-- **GUI Panel**: Change images, adjust point size, and background color
-- **Drag & Drop**: Drop image files directly onto the canvas
+- **Leva GUI Panel**: Change images, adjust point size, and background color
+- **Drag & Drop**: Drop image files directly onto the canvas to analyze new images
 
 ## Dependencies
 
-- **Three.js**: 3D graphics rendering
-- **lil-gui**: GUI controls
-- **Vite**: Build tool and development server
+- **React**: UI library for component-based architecture
+- **React Three Fiber**: React renderer for Three.js
+- **@react-three/drei**: Useful helpers for React Three Fiber (OrbitControls)
+- **Three.js**: 3D graphics rendering engine
+- **Leva**: Modern React-based GUI controls
+- **Vite**: Build tool and development server with React support
+
+## Architecture
+
+The application consists of several key components:
+
+- **App.jsx**: Main React component with Canvas setup and drag-and-drop handling
+- **TristogramVisualization**: React Three Fiber component managing the 3D scene
+- **Tristogram.js**: Core color analysis class (unchanged from original)
+- **ThreeTristogram.js**: Legacy Three.js class (deprecated, kept for reference)
 
 ## Original Source
 
-Extracted and refactored from the xr.webvr.dev examples (ex7) with modern tooling and improved code organization.
+Extracted and refactored from the xr.webvr.dev examples (ex7) and converted from vanilla Three.js to React Three Fiber with modern React patterns, improved state management, and comprehensive JSDoc documentation.

@@ -14,7 +14,7 @@ This is a WebXR experiments repository hosting various interactive examples usin
     - **three.js/**: Three.js examples including cube demos, point cloud visualizations (points1, points2), depth mapping (depthbot), and 3D text (wordle1)
   - **fonts/**: Three.js font assets (helvetiker_regular.typeface.json)
   - **images/**: Image assets for examples including depth maps and textures
-- **tristogram/**: Standalone npm package extracted from points2/ex7, featuring 3D color histogram visualization with modern Vite tooling
+- **tristogram/**: Standalone npm package extracted from points2/ex7, featuring 3D color histogram visualization implemented with React Three Fiber and modern Vite tooling
 - **Root files**: package.json, yarn.lock, README.md, .eslintrc.js
 
 ### Key Example Categories
@@ -60,7 +60,7 @@ yarn run sync   # Deploy build directory to configured path
 - Use a local web server to serve files (required for module imports and CORS)
 - Examples use ES6 modules with relative imports
 
-**Tristogram package:**
+**Tristogram package (React Three Fiber):**
 
 ```bash
 cd tristogram
@@ -68,6 +68,7 @@ npm install         # Install dependencies
 npm run dev         # Start development server on port 3000
 npm run build       # Build for production
 npm run preview     # Preview production build
+npm run lint        # Run ESLint on source files
 ```
 
 ## Code Conventions
@@ -78,6 +79,7 @@ npm run preview     # Preview production build
 - Examples follow pattern of import statements, init functions, and animation loops
 - VR support implemented via WebXR with VRButton helper
 - Three.js examples commonly use OrbitControls for camera manipulation
+- **Tristogram package**: Uses React Three Fiber with modern React patterns, Leva for GUI controls, and JSDoc comments for documentation
 
 ## Important Notes
 
