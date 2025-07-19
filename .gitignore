@@ -11,3 +11,6 @@
 
 node_modules/*
 .DS_Store
+
+tristogram/node_modules
+tristogram/dist
