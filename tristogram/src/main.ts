@@ -1,20 +1,26 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GUI } from 'lil-gui';
-import ThreeTristogram from './ThreeTristogram.js';
+import ThreeTristogram from './ThreeTristogram.ts';
 
-let camera;
-let scene;
-let renderer;
-let tristogram;
-let oldImage;
-let controls;
+let camera: THREE.PerspectiveCamera;
+let scene: THREE.Scene;
+let renderer: THREE.WebGLRenderer;
+let tristogram: ThreeTristogram;
+let oldImage: string;
+let controls: OrbitControls;
 
-const canvas = document.querySelector('canvas.webgl');
+const canvas = document.querySelector('canvas.webgl') as HTMLCanvasElement;
 canvas.ondrop = dropHandler;
 canvas.ondragover = dragOverHandler;
 
-const guiSettings = {
+interface GuiSettings {
+  image: string;
+  background: number;
+  pointSize: number;
+}
+
+const guiSettings: GuiSettings = {
   image: '/images/wallaby_746_600x450.jpg',
   background: 0x111111,
   pointSize: 1,
@@ -27,7 +33,7 @@ try {
 }
 animate();
 
-function guiInit() {
+function guiInit(): void {
   const gui = new GUI();
   gui.add(guiSettings, 'image', {
     glitchGray: '/images/glitch-art-phone-gray.jpg',
@@ -48,7 +54,7 @@ function guiInit() {
   gui.addColor(guiSettings, 'background').name('Background');
 }
 
-async function init() {
+async function init(): Promise<void> {
   renderer = new THREE.WebGLRenderer({ 
     canvas,
     antialias: true 
@@ -79,7 +85,7 @@ async function init() {
   await tristogram.load(guiSettings.image);
 }
 
-async function render() {
+async function render(): Promise<void> {
   controls.update();
 
   if (tristogram.pointsMaterial) {
@@ -98,18 +104,18 @@ async function render() {
   renderer.render(scene, camera);
 }
 
-function animate() {
+function animate(): void {
   requestAnimationFrame(animate);
   render();
 }
 
-function onWindowResize() {
+function onWindowResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function dropHandler(ev) {
+function dropHandler(ev: DragEvent): void {
   ev.preventDefault();
 
   if (ev.dataTransfer.items) {
@@ -124,6 +130,6 @@ function dropHandler(ev) {
   }
 }
 
-function dragOverHandler(ev) {
+function dragOverHandler(ev: DragEvent): void {
   ev.preventDefault();
 }

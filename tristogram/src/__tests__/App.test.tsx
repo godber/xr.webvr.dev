@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import App from '../App.jsx';
+import App from '../App.tsx';
 
 // Mock Three.js modules
 vi.mock('three', () => ({
@@ -49,7 +49,7 @@ vi.mock('leva', () => ({
 }));
 
 // Mock Tristogram
-vi.mock('../Tristogram.js', () => ({
+vi.mock('../Tristogram.ts', () => ({
   default: vi.fn(() => ({
     positions: [255, 0, 0, 0, 255, 0, 0, 0, 255],
     colors: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],

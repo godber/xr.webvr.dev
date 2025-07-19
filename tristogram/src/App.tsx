@@ -3,7 +3,16 @@ import { Canvas, useThree, extend } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useControls } from 'leva';
 import * as THREE from 'three';
-import Tristogram from './Tristogram.js';
+import Tristogram from './Tristogram.ts';
+
+interface TristogramVisualizationProps {
+  droppedImageUrl: string | null;
+}
+
+interface ImageData {
+  positions: Float32Array;
+  colors: Float32Array;
+}
 
 extend({ OrbitControls });
 
@@ -11,18 +20,14 @@ extend({ OrbitControls });
  * TristogramVisualization component renders a 3D color histogram visualization
  * using React Three Fiber. It displays both a point cloud representation of the
  * color distribution and a 2D preview of the source image.
- * 
- * @param {Object} props - Component props
- * @param {string|null} props.droppedImageUrl - URL of a dropped image file, takes precedence over GUI selection
- * @returns {JSX.Element} The 3D visualization scene
  */
-function TristogramVisualization({ droppedImageUrl }) {
-  const pointsRef = useRef();
-  const imageRef = useRef();
+function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationProps): JSX.Element {
+  const pointsRef = useRef<THREE.Points | null>(null);
+  const imageRef = useRef<THREE.Mesh | null>(null);
   const { scene } = useThree();
   
-  const [imageData, setImageData] = useState(null);
-  const [imageTexture, setImageTexture] = useState(null);
+  const [imageData, setImageData] = useState<ImageData | null>(null);
+  const [imageTexture, setImageTexture] = useState<THREE.Texture | null>(null);
 
   const { 
     image, 
@@ -73,7 +78,7 @@ function TristogramVisualization({ droppedImageUrl }) {
     );
   }, [currentImageUrl]);
 
-  const pointsGeometry = useMemo(() => {
+  const pointsGeometry = useMemo((): THREE.BufferGeometry | null => {
     if (!imageData) return null;
     
     const geometry = new THREE.BufferGeometry();
@@ -82,7 +87,7 @@ function TristogramVisualization({ droppedImageUrl }) {
     return geometry;
   }, [imageData]);
 
-  const pointsMaterial = useMemo(() => {
+  const pointsMaterial = useMemo((): THREE.PointsMaterial => {
     return new THREE.PointsMaterial({
       size: pointSize,
       vertexColors: true,
@@ -91,7 +96,7 @@ function TristogramVisualization({ droppedImageUrl }) {
     });
   }, [pointSize]);
 
-  const imageGeometry = useMemo(() => {
+  const imageGeometry = useMemo((): THREE.PlaneGeometry | null => {
     if (!imageTexture) return null;
     
     const imgDisplayHeight = 256;
@@ -99,12 +104,12 @@ function TristogramVisualization({ droppedImageUrl }) {
     return new THREE.PlaneGeometry(imgDisplayWidth, imgDisplayHeight);
   }, [imageTexture]);
 
-  const imageMaterial = useMemo(() => {
+  const imageMaterial = useMemo((): THREE.MeshBasicMaterial | null => {
     if (!imageTexture) return null;
     return new THREE.MeshBasicMaterial({ map: imageTexture });
   }, [imageTexture]);
 
-  const imagePosition = useMemo(() => {
+  const imagePosition = useMemo((): [number, number, number] => {
     if (!imageTexture) return [0, 0, 0];
     
     const imgDisplayHeight = 256;
@@ -133,33 +138,28 @@ function TristogramVisualization({ droppedImageUrl }) {
  * Main App component that provides the React Three Fiber canvas and handles
  * drag-and-drop functionality for image files. Creates a full-screen 3D
  * visualization with interactive controls.
- * 
- * @returns {JSX.Element} The main application interface
  */
-function App() {
-  /** @type {[string|null, Function]} State for storing dropped image URL */
-  const [droppedImageUrl, setDroppedImageUrl] = useState(null);
+function App(): JSX.Element {
+  const [droppedImageUrl, setDroppedImageUrl] = useState<string | null>(null);
 
   /**
    * Prevents default drag behavior to enable drop functionality
-   * @param {DragEvent} event - The drag over event
    */
-  const handleDragOver = useCallback((event) => {
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
     event.preventDefault();
   }, []);
 
   /**
    * Handles dropped image files by creating object URLs and updating state
-   * @param {DragEvent} event - The drop event containing file data
    */
-  const handleDrop = useCallback((event) => {
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
     event.preventDefault();
     
     if (event.dataTransfer.items) {
       for (let i = 0; i < event.dataTransfer.items.length; i++) {
         if (event.dataTransfer.items[i].kind === 'file') {
           const file = event.dataTransfer.items[i].getAsFile();
-          if (file.type.startsWith('image/')) {
+          if (file && file.type.startsWith('image/')) {
             console.log('Dropped image file:', file.name);
             const imageUrl = URL.createObjectURL(file);
             setDroppedImageUrl(imageUrl);

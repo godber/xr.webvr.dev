@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import Tristogram from '../Tristogram.js';
+import Tristogram from '../Tristogram.ts';
 
 describe('Tristogram', () => {
-  let mockImage;
-  let mockCanvas;
-  let mockContext;
+  let mockImage: HTMLImageElement;
+  let mockCanvas: HTMLCanvasElement;
+  let mockContext: CanvasRenderingContext2D;
 
   beforeEach(() => {
     mockImage = {
       width: 2,
       height: 2,
-    };
+    } as HTMLImageElement;
 
     mockContext = {
       drawImage: vi.fn(),
@@ -30,9 +30,9 @@ describe('Tristogram', () => {
       width: 0,
       height: 0,
       getContext: vi.fn(() => mockContext),
-    };
+    } as HTMLCanvasElement;
 
-    vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas);
+    vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
   });
 
   describe('constructor', () => {
@@ -79,7 +79,7 @@ describe('Tristogram', () => {
       const tristogram = new Tristogram(mockImage);
       
       expect(tristogram.nonZeroCount).toBe(1);
-      expect(tristogram.positions).toEqual([0, 0, 0]);
+      expect(tristogram.positions).toEqual(new Float32Array([0, 0, 0]));
       expect(tristogram.values).toEqual([1]);
     });
   });
