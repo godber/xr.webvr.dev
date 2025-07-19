@@ -1,18 +1,33 @@
+interface PixelColor {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
 /**
  * Tristogram class for analyzing color distribution in images.
  * Creates a 3D histogram representing the RGB color space distribution
  * of pixels in the provided image.
  */
 class Tristogram {
+  nonZeroCount: number;
+  totalCount: number;
+  maxValue: number;
+  positions: Float32Array;
+  values: number[];
+  colors: Float32Array;
+  tristogram: number[][][];
+  imageData: ImageData;
+
   /**
    * Creates a new Tristogram instance and analyzes the provided image
-   * @param {HTMLImageElement} image - The image element to analyze
    */
-  constructor(image) {
+  constructor(image: HTMLImageElement) {
     this.nonZeroCount = 0;
     this.totalCount = 0;
     this.maxValue = 0;
-    this.positions = [];
+    const positions: number[] = [];
     this.values = [];
 
     this.tristogram = Array(256).fill().map(
@@ -37,7 +52,7 @@ class Tristogram {
               this.maxValue = this.tristogram[r][g][b];
             }
             this.nonZeroCount++;
-            this.positions.push(r, g, b);
+            positions.push(r, g, b);
             this.values.push(this.tristogram[r][g][b]);
           }
           this.totalCount++;
@@ -45,6 +60,7 @@ class Tristogram {
       }
     }
 
+    this.positions = new Float32Array(positions);
     this.colors = new Float32Array(this.values.length * 4);
     for (let i = 0; i < this.values.length; i += 1) {
       const t = this.values[i] / this.maxValue;
@@ -57,15 +73,13 @@ class Tristogram {
 
   /**
    * Extracts ImageData from an HTMLImageElement using canvas
-   * @param {HTMLImageElement} image - The image to extract data from
-   * @returns {ImageData} The extracted image data
    */
-  static getImageData(image) {
+  static getImageData(image: HTMLImageElement): ImageData {
     const canvas = document.createElement('canvas');
     canvas.width = image.width;
     canvas.height = image.height;
 
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext('2d')!;
     context.drawImage(image, 0, 0);
     const data = context.getImageData(0, 0, image.width, image.height);
     return data;
@@ -73,15 +87,11 @@ class Tristogram {
 
   /**
    * Gets pixel color values at specific coordinates
-   * @param {ImageData} imageData - The image data to read from
-   * @param {number} x - X coordinate of the pixel
-   * @param {number} y - Y coordinate of the pixel
-   * @returns {Object} Pixel color object with r, g, b, a properties
    */
-  static getPixel(imageData, x, y) {
+  static getPixel(imageData: ImageData, x: number, y: number): PixelColor {
     const position = (x + imageData.width * y) * 4;
     const { data } = imageData;
-    const pixel = {
+    const pixel: PixelColor = {
       r: data[position],
       g: data[position + 1],
       b: data[position + 2],

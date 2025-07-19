@@ -1,19 +1,30 @@
 import * as THREE from 'three';
-import Tristogram from './Tristogram.js';
+import Tristogram from './Tristogram.ts';
+
+interface Settings {
+  pointSize: number;
+}
 
 /**
  * ThreeTristogram class manages Three.js objects for displaying tristogram data.
  * Note: This class is from the original Three.js implementation and is no longer
  * used in the React Three Fiber version. Kept for reference.
- * @deprecated Use the React Three Fiber components in App.jsx instead
+ * @deprecated Use the React Three Fiber components in App.tsx instead
  */
 class ThreeTristogram {
+  scene: THREE.Scene;
+  settings: Settings;
+  pointsGeometry?: THREE.BufferGeometry;
+  pointsMaterial?: THREE.PointsMaterial;
+  pointsMesh?: THREE.Points;
+  imageGeometry?: THREE.PlaneGeometry;
+  imageMaterial?: THREE.MeshBasicMaterial;
+  imageMesh?: THREE.Mesh;
+
   /**
    * Creates a new ThreeTristogram instance
-   * @param {THREE.Scene} scene - The Three.js scene to add objects to
-   * @param {Object} settings - Configuration settings object
    */
-  constructor(scene, settings) {
+  constructor(scene: THREE.Scene, settings: Settings) {
     this.scene = scene;
     this.settings = settings;
   }
@@ -21,7 +32,7 @@ class ThreeTristogram {
   /**
    * Disposes of all Three.js objects and removes them from the scene
    */
-  dispose() {
+  dispose(): void {
     if (this.pointsGeometry) {
       this.pointsGeometry.dispose();
     }
@@ -45,10 +56,9 @@ class ThreeTristogram {
 
   /**
    * Loads an image and creates the tristogram visualization
-   * @param {string} imageUrl - URL of the image to load and analyze
    */
-  async load(imageUrl) {
-    let sourceImageTexture;
+  async load(imageUrl: string): Promise<void> {
+    let sourceImageTexture: THREE.Texture;
     const loader = new THREE.TextureLoader();
 
     try {

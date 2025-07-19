@@ -1,4 +1,5 @@
 module.exports = {
+  root: true,
   env: {
     browser: true,
     es2021: true,
@@ -8,37 +9,44 @@ module.exports = {
     'eslint:recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:@typescript-eslint/recommended',
   ],
+  ignorePatterns: ['dist', '.eslintrc.js'],
+  parser: '@typescript-eslint/parser',
   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
     ecmaFeatures: {
       jsx: true,
     },
+    ecmaVersion: 'latest',
+    sourceType: 'module',
   },
-  plugins: ['react', 'react-hooks'],
+  plugins: [
+    'react',
+    'react-hooks',
+    '@typescript-eslint',
+    'vitest-globals',
+  ],
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    'react/jsx-uses-react': 'off',
+    'react/no-unknown-property': 'off',
+    'react/prop-types': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+  },
   settings: {
     react: {
       version: 'detect',
     },
   },
-  rules: {
-    'react/prop-types': 'off',
-    'react/react-in-jsx-scope': 'off',
-    'react/no-unknown-property': ['error', { ignore: ['args', 'geometry', 'material', 'position'] }],
-    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-  },
   overrides: [
     {
-      files: ['**/*.test.js', '**/*.test.jsx', '**/test-setup.js'],
+      files: ['**/__tests__/**/*', '**/*.test.*'],
       env: {
-        'vitest-globals/env': true
+        'vitest-globals/env': true,
       },
-      extends: ['plugin:vitest-globals/recommended'],
-      globals: {
-        vi: 'readonly',
-        global: 'readonly',
-      }
-    }
-  ]
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
+  ],
 };

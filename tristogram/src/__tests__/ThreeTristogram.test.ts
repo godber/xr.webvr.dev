@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import ThreeTristogram from '../ThreeTristogram.js';
+import ThreeTristogram from '../ThreeTristogram.ts';
 
 // Mock Three.js
 const mockScene = {
@@ -41,7 +41,7 @@ vi.mock('three', () => ({
 }));
 
 // Mock Tristogram
-vi.mock('../Tristogram.js', () => ({
+vi.mock('../Tristogram.ts', () => ({
   default: vi.fn(() => ({
     positions: [255, 0, 0, 0, 255, 0, 0, 0, 255],
     colors: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -49,8 +49,8 @@ vi.mock('../Tristogram.js', () => ({
 }));
 
 describe('ThreeTristogram', () => {
-  let threeTristogram;
-  let settings;
+  let threeTristogram: ThreeTristogram;
+  let settings: { pointSize: number; };
 
   beforeEach(() => {
     settings = {
@@ -115,7 +115,7 @@ describe('ThreeTristogram', () => {
       const mockTextureLoader = {
         loadAsync: vi.fn().mockRejectedValue(new Error('Load failed')),
       };
-      vi.mocked(TextureLoader).mockReturnValue(mockTextureLoader);
+      vi.mocked(TextureLoader).mockReturnValue(mockTextureLoader as any);
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
@@ -132,7 +132,7 @@ describe('ThreeTristogram', () => {
       const mockTextureLoader = {
         loadAsync: vi.fn().mockResolvedValue(mockTexture),
       };
-      vi.mocked(await import('three')).TextureLoader.mockReturnValue(mockTextureLoader);
+      vi.mocked((await import('three')).TextureLoader).mockReturnValue(mockTextureLoader as any);
 
       const newTristogram = new ThreeTristogram(mockScene, settings);
       await newTristogram.load('/test-image.jpg');
