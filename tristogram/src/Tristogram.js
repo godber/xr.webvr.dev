@@ -1,4 +1,13 @@
+/**
+ * Tristogram class for analyzing color distribution in images.
+ * Creates a 3D histogram representing the RGB color space distribution
+ * of pixels in the provided image.
+ */
 class Tristogram {
+  /**
+   * Creates a new Tristogram instance and analyzes the provided image
+   * @param {HTMLImageElement} image - The image element to analyze
+   */
   constructor(image) {
     this.nonZeroCount = 0;
     this.totalCount = 0;
@@ -46,6 +55,11 @@ class Tristogram {
     }
   }
 
+  /**
+   * Extracts ImageData from an HTMLImageElement using canvas
+   * @param {HTMLImageElement} image - The image to extract data from
+   * @returns {ImageData} The extracted image data
+   */
   static getImageData(image) {
     const canvas = document.createElement('canvas');
     canvas.width = image.width;
@@ -57,6 +71,13 @@ class Tristogram {
     return data;
   }
 
+  /**
+   * Gets pixel color values at specific coordinates
+   * @param {ImageData} imageData - The image data to read from
+   * @param {number} x - X coordinate of the pixel
+   * @param {number} y - Y coordinate of the pixel
+   * @returns {Object} Pixel color object with r, g, b, a properties
+   */
   static getPixel(imageData, x, y) {
     const position = (x + imageData.width * y) * 4;
     const { data } = imageData;

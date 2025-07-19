@@ -11,33 +11,10 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
         }
-        
-        .webgl {
-            position: fixed;
-            top: 0;
-            left: 0;
-            outline: none;
-        }
-        
-        .drop-zone {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border-radius: 5px;
-            font-size: 14px;
-            pointer-events: none;
-            z-index: 100;
-        }
     </style>
 </head>
 <body>
-    <canvas class="webgl" id="drop_zone"></canvas>
-    <div class="drop-zone">
-        Drag and drop an image to analyze its color histogram
-    </div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
