@@ -7,6 +7,12 @@
 
 export { runBenchmarkSuite, DEFAULT_BENCHMARK_CONFIG } from './benchmarkRunner';
 export { generateTestImage, ImageType } from './imageGenerator';
+export { 
+  saveSampleImage, 
+  saveAllSampleImages, 
+  createComparisonGrid, 
+  analyzeImageTypes 
+} from './sampleImageSaver';
 export type {
   BenchmarkConfig,
   BenchmarkResult,

@@ -17,6 +17,10 @@ export interface BenchmarkConfig {
   enableMemoryMonitoring: boolean;
   /** Whether to enable detailed phase timing */
   enablePhaseTimings: boolean;
+  /** Whether to save sample images for verification */
+  saveSampleImages?: boolean;
+  /** Directory name for saving sample images */
+  sampleImageDir?: string;
 }
 
 export interface PhaseTimings {

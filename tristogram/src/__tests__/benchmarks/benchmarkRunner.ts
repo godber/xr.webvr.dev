@@ -5,6 +5,7 @@
 import Tristogram from '../../Tristogram';
 import { generateTestImage, ImageSize, ImageType } from './imageGenerator';
 import { generateMockTestImage } from './mockImageGenerator';
+import { saveSampleImage } from './sampleImageSaver';
 import {
   BenchmarkConfig,
   BenchmarkResult,
@@ -220,6 +221,24 @@ export async function runBenchmarkSuite(config: BenchmarkConfig): Promise<Benchm
   console.log('Starting Tristogram constructor benchmark suite...');
   console.log(`Configuration: ${config.iterations} iterations, ${config.warmupRuns} warmup runs`);
   
+  // Save sample images if requested (only in browser environment)
+  if (config.saveSampleImages && typeof window !== 'undefined') {
+    console.log('Saving sample images for verification...');
+    const sampleSize = { width: 200, height: 200 };
+    const savedTypes = new Set<ImageType>();
+    
+    for (const imageType of config.imageTypes) {
+      if (!savedTypes.has(imageType)) {
+        try {
+          await saveSampleImage(imageType, sampleSize, config.sampleImageDir);
+          savedTypes.add(imageType);
+        } catch (error) {
+          console.warn(`Failed to save sample image for ${imageType}:`, error);
+        }
+      }
+    }
+  }
+  
   // Run benchmarks for all combinations of sizes and types
   for (const imageSize of config.imageSizes) {
     for (const imageType of config.imageTypes) {
@@ -265,4 +284,6 @@ export const DEFAULT_BENCHMARK_CONFIG: BenchmarkConfig = {
   imageTypes: [ImageType.SOLID_COLOR, ImageType.GRADIENT, ImageType.RANDOM_NOISE, ImageType.CHECKERBOARD],
   enableMemoryMonitoring: true,
   enablePhaseTimings: true,
+  saveSampleImages: false,
+  sampleImageDir: 'tristogram-samples',
 };

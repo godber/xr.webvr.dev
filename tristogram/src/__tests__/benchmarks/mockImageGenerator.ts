@@ -6,12 +6,18 @@
 import { ImageSize, ImageType } from './imageGenerator';
 
 /**
- * Creates a mock HTMLImageElement with realistic dimensions and mock data
+ * Creates a mock HTMLImageElement with realistic dimensions and type metadata
  */
-function createMockImage(width: number, height: number): HTMLImageElement {
+function createMockImage(width: number, height: number, type: ImageType): HTMLImageElement {
   const img = new Image();
   Object.defineProperty(img, 'width', { value: width, writable: false, configurable: true });
   Object.defineProperty(img, 'height', { value: height, writable: false, configurable: true });
+  
+  // Store metadata that the Canvas mock can use to generate realistic data
+  (img as any).__mockImageType = type;
+  (img as any).__mockWidth = width;
+  (img as any).__mockHeight = height;
+  
   return img;
 }
 
@@ -19,17 +25,7 @@ function createMockImage(width: number, height: number): HTMLImageElement {
  * Generates test images for benchmark testing in mock environments
  */
 export async function generateMockTestImage(type: ImageType, size: ImageSize): Promise<HTMLImageElement> {
-  const img = createMockImage(size.width, size.height);
-  
-  // Set a deterministic seed based on image type for consistent test results
-  const seed = type === ImageType.SOLID_COLOR ? 1 : 
-               type === ImageType.GRADIENT ? 2 :
-               type === ImageType.CHECKERBOARD ? 3 : 4;
-  
-  // Store type information for potential use in test validation
-  (img as any).__mockImageType = type;
-  (img as any).__mockSeed = seed;
-  
+  const img = createMockImage(size.width, size.height, type);
   return Promise.resolve(img);
 }
 

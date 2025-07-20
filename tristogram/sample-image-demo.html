@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tristogram Sample Image Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .controls {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .preview-item {
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .preview-item canvas {
+            border: 1px solid #ccc;
+            max-width: 100%;
+        }
+        .log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .size-selector {
+            margin: 10px 0;
+        }
+        .size-selector select {
+            padding: 5px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Tristogram Sample Image Generator</h1>
+    <p>Generate sample test images to verify the image generation algorithms used in the Tristogram benchmark.</p>
+    
+    <div class="controls">
+        <h3>Controls</h3>
+        <div class="size-selector">
+            <label for="sizeSelect">Image Size:</label>
+            <select id="sizeSelect">
+                <option value="100,100">100x100</option>
+                <option value="200,200" selected>200x200</option>
+                <option value="300,300">300x300</option>
+                <option value="400,400">400x400</option>
+            </select>
+        </div>
+        
+        <button class="button" onclick="generatePreviews()">🖼️ Generate Preview Images</button>
+        <button class="button" onclick="generateAndDownloadAll()">💾 Download All Sample Images</button>
+        <button class="button" onclick="generateComparisonGrid()">📋 Download Comparison Grid</button>
+        <button class="button" onclick="runAnalysis()">📊 Analyze Image Types</button>
+        <button class="button" onclick="clearLog()">🗑️ Clear Log</button>
+    </div>
+
+    <div id="previewGrid" class="preview-grid"></div>
+    <div id="log" class="log">Ready to generate sample images...\n</div>
+
+    <script type="module">
+        // Image generation functions (simplified versions of the TypeScript code)
+        const ImageType = {
+            SOLID_COLOR: 'solid',
+            GRADIENT: 'gradient', 
+            RANDOM_NOISE: 'noise',
+            CHECKERBOARD: 'checkerboard'
+        };
+
+        function createCanvas(width, height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            return canvas;
+        }
+
+        function canvasToImage(canvas) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = canvas.toDataURL();
+            });
+        }
+
+        async function generateSolidColorImage(size, r = 128, g = 128, b = 128) {
+            const canvas = createCanvas(size.width, size.height);
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.fillRect(0, 0, size.width, size.height);
+            
+            return canvasToImage(canvas);
+        }
+
+        async function generateGradientImage(size) {
+            const canvas = createCanvas(size.width, size.height);
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, size.width, 0);
+            gradient.addColorStop(0, 'rgb(255, 0, 0)');
+            gradient.addColorStop(0.5, 'rgb(0, 255, 0)');
+            gradient.addColorStop(1, 'rgb(0, 0, 255)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size.width, size.height);
+            
+            return canvasToImage(canvas);
+        }
+
+        async function generateRandomNoiseImage(size) {
+            const canvas = createCanvas(size.width, size.height);
+            const ctx = canvas.getContext('2d');
+            
+            const imageData = ctx.createImageData(size.width, size.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.floor(Math.random() * 256);     // R
+                data[i + 1] = Math.floor(Math.random() * 256); // G
+                data[i + 2] = Math.floor(Math.random() * 256); // B
+                data[i + 3] = 255; // A
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            return canvasToImage(canvas);
+        }
+
+        async function generateCheckerboardImage(size, squareSize = 20) {
+            const canvas = createCanvas(size.width, size.height);
+            const ctx = canvas.getContext('2d');
+            
+            for (let x = 0; x < size.width; x += squareSize) {
+                for (let y = 0; y < size.height; y += squareSize) {
+                    const isEven = (Math.floor(x / squareSize) + Math.floor(y / squareSize)) % 2 === 0;
+                    ctx.fillStyle = isEven ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)';
+                    ctx.fillRect(x, y, squareSize, squareSize);
+                }
+            }
+            
+            return canvasToImage(canvas);
+        }
+
+        async function generateTestImage(type, size) {
+            switch (type) {
+                case ImageType.SOLID_COLOR:
+                    return generateSolidColorImage(size);
+                case ImageType.GRADIENT:
+                    return generateGradientImage(size);
+                case ImageType.RANDOM_NOISE:
+                    return generateRandomNoiseImage(size);
+                case ImageType.CHECKERBOARD:
+                    return generateCheckerboardImage(size);
+                default:
+                    throw new Error(`Unknown image type: ${type}`);
+            }
+        }
+
+        function downloadImage(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function imageToCanvas(image) {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            
+            return canvas;
+        }
+
+        function log(message) {
+            const logElement = document.getElementById('log');
+            logElement.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function getSelectedSize() {
+            const select = document.getElementById('sizeSelect');
+            const [width, height] = select.value.split(',').map(Number);
+            return { width, height };
+        }
+
+        // Global functions for button clicks
+        window.generatePreviews = async function() {
+            log('Generating preview images...');
+            const size = getSelectedSize();
+            const grid = document.getElementById('previewGrid');
+            grid.innerHTML = '';
+
+            const imageTypes = [
+                { type: ImageType.SOLID_COLOR, name: 'Solid Color' },
+                { type: ImageType.GRADIENT, name: 'Gradient' },
+                { type: ImageType.RANDOM_NOISE, name: 'Random Noise' },
+                { type: ImageType.CHECKERBOARD, name: 'Checkerboard' }
+            ];
+
+            for (const imageInfo of imageTypes) {
+                try {
+                    log(`Generating ${imageInfo.name} (${size.width}x${size.height})...`);
+                    const image = await generateTestImage(imageInfo.type, size);
+                    const canvas = imageToCanvas(image);
+                    
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <h4>${imageInfo.name}</h4>
+                        <div style="margin: 10px 0;">${canvas.outerHTML}</div>
+                        <p>${size.width}x${size.height} pixels</p>
+                        <button class="button" onclick="downloadSingleImage('${imageInfo.type}', ${size.width}, ${size.height})">
+                            💾 Download
+                        </button>
+                    `;
+                    grid.appendChild(previewItem);
+                    log(`✓ ${imageInfo.name} generated successfully`);
+                } catch (error) {
+                    log(`✗ Failed to generate ${imageInfo.name}: ${error.message}`);
+                }
+            }
+            log('Preview generation complete!');
+        };
+
+        window.downloadSingleImage = async function(imageType, width, height) {
+            try {
+                log(`Downloading ${imageType} image...`);
+                const image = await generateTestImage(imageType, { width, height });
+                const canvas = imageToCanvas(image);
+                downloadImage(canvas, `sample-${imageType}-${width}x${height}.png`);
+                log(`✓ Downloaded sample-${imageType}-${width}x${height}.png`);
+            } catch (error) {
+                log(`✗ Download failed: ${error.message}`);
+            }
+        };
+
+        window.generateAndDownloadAll = async function() {
+            log('Generating and downloading all sample images...');
+            const size = getSelectedSize();
+            const imageTypes = [ImageType.SOLID_COLOR, ImageType.GRADIENT, ImageType.RANDOM_NOISE, ImageType.CHECKERBOARD];
+
+            for (const imageType of imageTypes) {
+                try {
+                    log(`Generating ${imageType}...`);
+                    const image = await generateTestImage(imageType, size);
+                    const canvas = imageToCanvas(image);
+                    downloadImage(canvas, `sample-${imageType}-${size.width}x${size.height}.png`);
+                    log(`✓ Downloaded sample-${imageType}-${size.width}x${size.height}.png`);
+                    
+                    // Small delay between downloads
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } catch (error) {
+                    log(`✗ Failed to generate ${imageType}: ${error.message}`);
+                }
+            }
+            log('All sample images downloaded!');
+        };
+
+        window.generateComparisonGrid = async function() {
+            log('Creating comparison grid...');
+            const size = { width: 150, height: 150 };
+            
+            const gridCanvas = document.createElement('canvas');
+            gridCanvas.width = size.width * 2;
+            gridCanvas.height = size.height * 2;
+            const gridCtx = gridCanvas.getContext('2d');
+            
+            // Background
+            gridCtx.fillStyle = '#f0f0f0';
+            gridCtx.fillRect(0, 0, gridCanvas.width, gridCanvas.height);
+            
+            const imageTypes = [ImageType.SOLID_COLOR, ImageType.GRADIENT, ImageType.RANDOM_NOISE, ImageType.CHECKERBOARD];
+            const labels = ['Solid Color', 'Gradient', 'Random Noise', 'Checkerboard'];
+            const positions = [
+                { x: 0, y: 0 },
+                { x: size.width, y: 0 },
+                { x: 0, y: size.height },
+                { x: size.width, y: size.height }
+            ];
+            
+            for (let i = 0; i < imageTypes.length; i++) {
+                try {
+                    const image = await generateTestImage(imageTypes[i], size);
+                    const canvas = imageToCanvas(image);
+                    const pos = positions[i];
+                    
+                    gridCtx.drawImage(canvas, pos.x, pos.y);
+                    
+                    // Add border
+                    gridCtx.strokeStyle = '#000000';
+                    gridCtx.lineWidth = 2;
+                    gridCtx.strokeRect(pos.x, pos.y, size.width, size.height);
+                    
+                    // Add label
+                    gridCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    gridCtx.fillRect(pos.x + 2, pos.y + 2, 100, 20);
+                    gridCtx.fillStyle = '#000000';
+                    gridCtx.font = '12px Arial';
+                    gridCtx.fillText(labels[i], pos.x + 5, pos.y + 16);
+                    
+                    log(`✓ Added ${imageTypes[i]} to grid`);
+                } catch (error) {
+                    log(`✗ Failed to add ${imageTypes[i]} to grid: ${error.message}`);
+                }
+            }
+            
+            downloadImage(gridCanvas, 'tristogram-test-images-comparison-grid.png');
+            log('✓ Comparison grid downloaded!');
+        };
+
+        window.runAnalysis = async function() {
+            log('Running image type analysis...');
+            const size = { width: 100, height: 100 };
+            const imageTypes = [ImageType.SOLID_COLOR, ImageType.GRADIENT, ImageType.RANDOM_NOISE, ImageType.CHECKERBOARD];
+            
+            log('\nImage Type Analysis Results:');
+            log('Type\t\tGeneration Time\tEstimated Colors');
+            log('----\t\t---------------\t----------------');
+            
+            for (const imageType of imageTypes) {
+                try {
+                    const startTime = performance.now();
+                    const image = await generateTestImage(imageType, size);
+                    const endTime = performance.now();
+                    
+                    const generationTime = (endTime - startTime).toFixed(2);
+                    let estimatedColors = 'Unknown';
+                    
+                    switch (imageType) {
+                        case ImageType.SOLID_COLOR:
+                            estimatedColors = '1';
+                            break;
+                        case ImageType.GRADIENT:
+                            estimatedColors = '~100-500';
+                            break;
+                        case ImageType.RANDOM_NOISE:
+                            estimatedColors = '~8000-10000';
+                            break;
+                        case ImageType.CHECKERBOARD:
+                            estimatedColors = '2';
+                            break;
+                    }
+                    
+                    log(`${imageType.padEnd(12)}\t${generationTime}ms\t\t${estimatedColors}`);
+                } catch (error) {
+                    log(`${imageType.padEnd(12)}\tERROR\t\t${error.message}`);
+                }
+            }
+            log('\nAnalysis complete!');
+        };
+
+        window.clearLog = function() {
+            document.getElementById('log').textContent = 'Log cleared...\n';
+        };
+
+        // Initialize with previews
+        log('Sample Image Generator ready!');
+        log('Click "Generate Preview Images" to see the test images.');
+    </script>
+</body>
+</html>
