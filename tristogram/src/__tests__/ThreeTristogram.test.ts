@@ -42,10 +42,12 @@ vi.mock('three', () => ({
 
 // Mock Tristogram
 vi.mock('../Tristogram.ts', () => ({
-  default: vi.fn(() => ({
-    positions: [255, 0, 0, 0, 255, 0, 0, 0, 255],
-    colors: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  })),
+  default: {
+    fromHTMLImage: vi.fn(() => ({
+      positions: new Float32Array([255, 0, 0, 0, 255, 0, 0, 0, 255]),
+      colors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+    })),
+  },
 }));
 
 describe('ThreeTristogram', () => {

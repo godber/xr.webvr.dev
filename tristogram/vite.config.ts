@@ -17,5 +17,16 @@ export default defineConfig({
         main: './index.html'
       }
     }
-  }
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['src/__tests__/setup.ts'],
+  },
+  define: {
+    'import.meta.vitest': undefined,
+  },
+  optimizeDeps: {
+    exclude: ['sharp'],
+  },
 });

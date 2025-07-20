@@ -5,6 +5,12 @@ interface PixelColor {
   a: number;
 }
 
+interface PixelData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
 /**
  * Tristogram class for analyzing color distribution in images.
  * Creates a 3D histogram representing the RGB color space distribution
@@ -18,12 +24,12 @@ class Tristogram {
   values: number[];
   colors: Float32Array;
   tristogram: number[][][];
-  imageData: ImageData;
+  imageData: PixelData;
 
   /**
-   * Creates a new Tristogram instance and analyzes the provided image
+   * Creates a new Tristogram instance and analyzes the provided pixel data
    */
-  constructor(image: HTMLImageElement) {
+  constructor(pixelData: PixelData) {
     this.nonZeroCount = 0;
     this.totalCount = 0;
     this.maxValue = 0;
@@ -36,7 +42,7 @@ class Tristogram {
       ),
     );
 
-    this.imageData = Tristogram.getImageData(image);
+    this.imageData = pixelData;
     for (let x = 0; x < this.imageData.width; x++) {
       for (let y = 0; y < this.imageData.height; y++) {
         const p = Tristogram.getPixel(this.imageData, x, y);
@@ -86,9 +92,50 @@ class Tristogram {
   }
 
   /**
+   * Factory method to create Tristogram from ImageData (browser)
+   */
+  static fromImageData(imageData: ImageData): Tristogram {
+    return new Tristogram(imageData);
+  }
+
+  /**
+   * Factory method to create Tristogram from HTMLImageElement (browser)
+   */
+  static fromHTMLImage(image: HTMLImageElement): Tristogram {
+    const imageData = Tristogram.getImageData(image);
+    return new Tristogram(imageData);
+  }
+
+  /**
+   * Factory method to create Tristogram from file path (Node.js)
+   */
+  static async fromFile(imagePath: string): Promise<Tristogram> {
+    if (typeof window !== 'undefined') {
+      throw new Error('fromFile is only available in Node.js environment. Use fromHTMLImage or fromImageData in the browser.');
+    }
+    
+    try {
+      // Use eval to prevent Vite from trying to resolve the import at build time
+      const sharpModule = await eval('import("sharp")');
+      const { data, info } = await sharpModule.default(imagePath)
+        .raw()
+        .ensureAlpha()
+        .toBuffer({ resolveWithObject: true });
+      
+      return new Tristogram({
+        data: new Uint8ClampedArray(data),
+        width: info.width,
+        height: info.height
+      });
+    } catch (error) {
+      throw new Error(`Failed to load image from file: ${(error as Error).message}. Make sure 'sharp' is installed for Node.js usage.`);
+    }
+  }
+
+  /**
    * Gets pixel color values at specific coordinates
    */
-  static getPixel(imageData: ImageData, x: number, y: number): PixelColor {
+  static getPixel(imageData: PixelData, x: number, y: number): PixelColor {
     const position = (x + imageData.width * y) * 4;
     const { data } = imageData;
     const pixel: PixelColor = {
