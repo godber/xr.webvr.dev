@@ -8,7 +8,11 @@
       "Bash(npm run test:run:*)",
       "Bash(mkdir:*)",
       "Bash(npm run lint)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

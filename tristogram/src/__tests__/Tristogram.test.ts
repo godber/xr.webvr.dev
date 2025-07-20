@@ -30,7 +30,7 @@ describe('Tristogram', () => {
       width: 0,
       height: 0,
       getContext: vi.fn(() => mockContext),
-    } as HTMLCanvasElement;
+    } as unknown as HTMLCanvasElement;
 
     vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
   });
