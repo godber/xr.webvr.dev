@@ -1,19 +1,16 @@
+import Tristogram from '../../Tristogram';
+
 interface PixelData {
   data: Uint8ClampedArray;
   width: number;
   height: number;
 }
 
-interface PixelColor {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
-}
 
 export interface BenchmarkResult {
   imageSize: string;
   imageType: string;
+  algorithm: string;
   totalTime: number;
   phases: {
     pixelIteration: number;
@@ -23,6 +20,17 @@ export interface BenchmarkResult {
   avgTime: number;
   minTime: number;
   maxTime: number;
+  nonZeroCount: number;
+  maxValue: number;
+}
+
+export interface AlgorithmComparison {
+  imageSize: string;
+  imageType: string;
+  legacy: BenchmarkResult;
+  singlePass: BenchmarkResult;
+  speedup: number;
+  memoryImprovement: string;
 }
 
 export interface BenchmarkConfig {
@@ -37,76 +45,22 @@ export interface BenchmarkConfig {
  */
 export class TristogramBenchmark {
   /**
-   * Benchmark the core phases of Tristogram construction
+   * Benchmark a specific algorithm implementation
    */
-  static benchmarkConstructorPhases(pixelData: PixelData): {
-    pixelIteration: number;
-    resultProcessing: number;
+  static benchmarkAlgorithm(
+    pixelData: PixelData,
+    algorithm: 'legacy' | 'single-pass'
+  ): {
     totalTime: number;
+    tristogram: Tristogram;
   } {
-    const startTotal = performance.now();
-    
-    // Initialize data structures (minimal overhead)
-    const tristogram = Array(256).fill(null).map(
-      () => Array(256).fill(null).map(
-        () => Array(256).fill(0),
-      ),
-    );
-    
-    // Phase 1: Pixel iteration and histogram population (lines 46-51)
-    const startPixelIteration = performance.now();
-    
-    for (let x = 0; x < pixelData.width; x++) {
-      for (let y = 0; y < pixelData.height; y++) {
-        const p = this.getPixel(pixelData, x, y);
-        tristogram[p.r][p.g][p.b] += 1;
-      }
-    }
-    
-    const endPixelIteration = performance.now();
-    const pixelIterationTime = endPixelIteration - startPixelIteration;
-    
-    // Phase 2: Result processing (lines 53-67)
-    const startResultProcessing = performance.now();
-    
-    let maxValue = 0;
-    const positions: number[] = [];
-    const values: number[] = [];
-    
-    for (let r = 0; r < tristogram.length; r++) {
-      for (let g = 0; g < tristogram[r].length; g++) {
-        for (let b = 0; b < tristogram[r][g].length; b++) {
-          if (tristogram[r][g][b] !== 0) {
-            if (tristogram[r][g][b] > maxValue) {
-              maxValue = tristogram[r][g][b];
-            }
-            positions.push(r, g, b);
-            values.push(tristogram[r][g][b]);
-          }
-        }
-      }
-    }
-    
-    // Convert to typed arrays (part of result processing)
-    const colors = new Float32Array(values.length * 4);
-    for (let i = 0; i < values.length; i += 1) {
-      const t = values[i] / maxValue;
-      colors[4 * i] = 1;
-      colors[4 * i + 1] = 1;
-      colors[4 * i + 2] = 1;
-      colors[4 * i + 3] = t;
-    }
-    
-    const endResultProcessing = performance.now();
-    const resultProcessingTime = endResultProcessing - startResultProcessing;
-    
-    const endTotal = performance.now();
-    const totalTime = endTotal - startTotal;
+    const start = performance.now();
+    const tristogram = new Tristogram(pixelData, { algorithm });
+    const end = performance.now();
     
     return {
-      pixelIteration: pixelIterationTime,
-      resultProcessing: resultProcessingTime,
-      totalTime,
+      totalTime: end - start,
+      tristogram
     };
   }
 
@@ -115,62 +69,79 @@ export class TristogramBenchmark {
    */
   static runBenchmarkIterations(
     pixelData: PixelData,
+    algorithm: 'legacy' | 'single-pass',
     iterations: number,
     warmupRuns: number = 3
   ): BenchmarkResult {
     const imageSize = `${pixelData.width}x${pixelData.height}`;
     const results: Array<{
-      pixelIteration: number;
-      resultProcessing: number;
       totalTime: number;
+      tristogram: Tristogram;
     }> = [];
     
     // Warmup runs to eliminate JIT compilation effects
     for (let i = 0; i < warmupRuns; i++) {
-      this.benchmarkConstructorPhases(pixelData);
+      this.benchmarkAlgorithm(pixelData, algorithm);
     }
     
     // Actual benchmark runs
     for (let i = 0; i < iterations; i++) {
-      const result = this.benchmarkConstructorPhases(pixelData);
+      const result = this.benchmarkAlgorithm(pixelData, algorithm);
       results.push(result);
     }
     
-    // Calculate statistics
+    // Calculate statistics from the last result (they should all be identical)
+    const lastTristogram = results[results.length - 1].tristogram;
     const totalTimes = results.map(r => r.totalTime);
-    const pixelIterationTimes = results.map(r => r.pixelIteration);
-    const resultProcessingTimes = results.map(r => r.resultProcessing);
     
     const avgTotal = totalTimes.reduce((a, b) => a + b, 0) / totalTimes.length;
-    const avgPixelIteration = pixelIterationTimes.reduce((a, b) => a + b, 0) / pixelIterationTimes.length;
-    const avgResultProcessing = resultProcessingTimes.reduce((a, b) => a + b, 0) / resultProcessingTimes.length;
     
     return {
       imageSize,
       imageType: 'synthetic', // Will be set by caller
+      algorithm,
       totalTime: avgTotal,
       phases: {
-        pixelIteration: avgPixelIteration,
-        resultProcessing: avgResultProcessing,
+        pixelIteration: 0, // Not measured separately anymore
+        resultProcessing: 0, // Not measured separately anymore
       },
       iterations,
       avgTime: avgTotal,
       minTime: Math.min(...totalTimes),
       maxTime: Math.max(...totalTimes),
+      nonZeroCount: lastTristogram.nonZeroCount,
+      maxValue: lastTristogram.maxValue,
     };
   }
 
   /**
-   * Helper method to get pixel color (matches Tristogram.getPixel)
+   * Compare both algorithms on the same data
    */
-  private static getPixel(imageData: PixelData, x: number, y: number): PixelColor {
-    const position = (x + imageData.width * y) * 4;
-    const { data } = imageData;
+  static compareAlgorithms(
+    pixelData: PixelData,
+    iterations: number = 5,
+    warmupRuns: number = 3
+  ): AlgorithmComparison {
+    const imageSize = `${pixelData.width}x${pixelData.height}`;
+    
+    const legacyResult = this.runBenchmarkIterations(pixelData, 'legacy', iterations, warmupRuns);
+    const singlePassResult = this.runBenchmarkIterations(pixelData, 'single-pass', iterations, warmupRuns);
+    
+    const speedup = legacyResult.totalTime / singlePassResult.totalTime;
+    
+    // Calculate memory improvement (legacy always uses 256^3 array, single-pass only uses actual colors)
+    const legacyMemoryCells = 256 * 256 * 256;
+    const singlePassMemoryCells = singlePassResult.nonZeroCount;
+    const memoryReduction = ((legacyMemoryCells - singlePassMemoryCells) / legacyMemoryCells * 100).toFixed(1);
+    
     return {
-      r: data[position],
-      g: data[position + 1],
-      b: data[position + 2],
-      a: data[position + 3],
+      imageSize,
+      imageType: legacyResult.imageType,
+      legacy: legacyResult,
+      singlePass: singlePassResult,
+      speedup,
+      memoryImprovement: `${memoryReduction}% less memory usage`,
     };
   }
+
 }
