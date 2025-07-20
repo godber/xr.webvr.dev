@@ -68,7 +68,7 @@ class ThreeTristogram {
       return;
     }
     
-    const tristogram = new Tristogram(sourceImageTexture.image);
+    const tristogram = Tristogram.fromHTMLImage(sourceImageTexture.image);
 
     this.pointsGeometry = new THREE.BufferGeometry();
     this.pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(tristogram.positions, 3));

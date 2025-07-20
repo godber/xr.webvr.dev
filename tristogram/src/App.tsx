@@ -67,7 +67,7 @@ function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationPro
     loader.load(
       currentImageUrl,
       (texture) => {
-        const tristogram = new Tristogram(texture.image);
+        const tristogram = Tristogram.fromHTMLImage(texture.image);
         setImageData(tristogram);
         setImageTexture(texture);
       },

@@ -5,8 +5,20 @@ describe('Tristogram', () => {
   let mockImage: HTMLImageElement;
   let mockCanvas: HTMLCanvasElement;
   let mockContext: CanvasRenderingContext2D;
+  let mockPixelData: { data: Uint8ClampedArray; width: number; height: number };
 
   beforeEach(() => {
+    mockPixelData = {
+      width: 2,
+      height: 2,
+      data: new Uint8ClampedArray([
+        255, 0, 0, 255,    // Red pixel
+        0, 255, 0, 255,    // Green pixel
+        0, 0, 255, 255,    // Blue pixel
+        255, 255, 255, 255 // White pixel
+      ]),
+    };
+
     mockImage = {
       width: 2,
       height: 2,
@@ -14,16 +26,7 @@ describe('Tristogram', () => {
 
     mockContext = {
       drawImage: vi.fn(),
-      getImageData: vi.fn(() => ({
-        width: 2,
-        height: 2,
-        data: new Uint8ClampedArray([
-          255, 0, 0, 255,    // Red pixel
-          0, 255, 0, 255,    // Green pixel
-          0, 0, 255, 255,    // Blue pixel
-          255, 255, 255, 255 // White pixel
-        ]),
-      })),
+      getImageData: vi.fn(() => mockPixelData),
     };
 
     mockCanvas = {
@@ -37,7 +40,7 @@ describe('Tristogram', () => {
 
   describe('constructor', () => {
     it('should initialize tristogram with correct dimensions', () => {
-      const tristogram = new Tristogram(mockImage);
+      const tristogram = new Tristogram(mockPixelData);
       
       expect(tristogram.tristogram).toBeDefined();
       expect(tristogram.tristogram.length).toBe(256);
@@ -46,7 +49,7 @@ describe('Tristogram', () => {
     });
 
     it('should analyze image data and populate histogram', () => {
-      const tristogram = new Tristogram(mockImage);
+      const tristogram = new Tristogram(mockPixelData);
       
       expect(tristogram.nonZeroCount).toBe(4);
       expect(tristogram.totalCount).toBe(256 * 256 * 256);
@@ -56,7 +59,7 @@ describe('Tristogram', () => {
     });
 
     it('should create color array with correct alpha values', () => {
-      const tristogram = new Tristogram(mockImage);
+      const tristogram = new Tristogram(mockPixelData);
       
       expect(tristogram.colors.length).toBe(16); // 4 colors * 4 components
       
@@ -69,18 +72,46 @@ describe('Tristogram', () => {
       }
     });
 
-    it('should handle empty image data', () => {
-      mockContext.getImageData.mockReturnValue({
+    it('should handle single pixel data', () => {
+      const singlePixelData = {
         width: 1,
         height: 1,
         data: new Uint8ClampedArray([0, 0, 0, 255]),
-      });
+      };
 
-      const tristogram = new Tristogram(mockImage);
+      const tristogram = new Tristogram(singlePixelData);
       
       expect(tristogram.nonZeroCount).toBe(1);
       expect(tristogram.positions).toEqual(new Float32Array([0, 0, 0]));
       expect(tristogram.values).toEqual([1]);
+    });
+  });
+
+  describe('factory methods', () => {
+    describe('fromImageData', () => {
+      it('should create tristogram from ImageData', () => {
+        const imageData = mockPixelData as ImageData;
+        const tristogram = Tristogram.fromImageData(imageData);
+        
+        expect(tristogram).toBeInstanceOf(Tristogram);
+        expect(tristogram.nonZeroCount).toBe(4);
+      });
+    });
+
+    describe('fromHTMLImage', () => {
+      it('should create tristogram from HTMLImageElement', () => {
+        const tristogram = Tristogram.fromHTMLImage(mockImage);
+        
+        expect(tristogram).toBeInstanceOf(Tristogram);
+        expect(tristogram.nonZeroCount).toBe(4);
+        expect(mockContext.drawImage).toHaveBeenCalledWith(mockImage, 0, 0);
+      });
+    });
+
+    describe('fromFile', () => {
+      it('should throw error in browser environment', async () => {
+        await expect(Tristogram.fromFile('/path/to/image.jpg')).rejects.toThrow('fromFile is only available in Node.js environment');
+      });
     });
   });
 
@@ -106,7 +137,7 @@ describe('Tristogram', () => {
 
   describe('getPixel', () => {
     it('should extract correct pixel values', () => {
-      const imageData = {
+      const pixelData = {
         width: 2,
         height: 2,
         data: new Uint8ClampedArray([
@@ -117,27 +148,27 @@ describe('Tristogram', () => {
         ]),
       };
 
-      const redPixel = Tristogram.getPixel(imageData, 0, 0);
+      const redPixel = Tristogram.getPixel(pixelData, 0, 0);
       expect(redPixel).toEqual({ r: 255, g: 0, b: 0, a: 255 });
 
-      const greenPixel = Tristogram.getPixel(imageData, 1, 0);
+      const greenPixel = Tristogram.getPixel(pixelData, 1, 0);
       expect(greenPixel).toEqual({ r: 0, g: 255, b: 0, a: 255 });
 
-      const bluePixel = Tristogram.getPixel(imageData, 0, 1);
+      const bluePixel = Tristogram.getPixel(pixelData, 0, 1);
       expect(bluePixel).toEqual({ r: 0, g: 0, b: 255, a: 255 });
 
-      const whitePixel = Tristogram.getPixel(imageData, 1, 1);
+      const whitePixel = Tristogram.getPixel(pixelData, 1, 1);
       expect(whitePixel).toEqual({ r: 255, g: 255, b: 255, a: 255 });
     });
 
     it('should handle edge cases', () => {
-      const imageData = {
+      const pixelData = {
         width: 1,
         height: 1,
         data: new Uint8ClampedArray([128, 64, 32, 16]),
       };
 
-      const pixel = Tristogram.getPixel(imageData, 0, 0);
+      const pixel = Tristogram.getPixel(pixelData, 0, 0);
       expect(pixel).toEqual({ r: 128, g: 64, b: 32, a: 16 });
     });
   });
