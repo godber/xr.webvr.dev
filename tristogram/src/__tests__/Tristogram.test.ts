@@ -39,13 +39,13 @@ describe('Tristogram', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize tristogram with correct dimensions', () => {
-      const tristogram = new Tristogram(mockPixelData);
+    it('should initialize tristogram with correct dimensions (legacy algorithm)', () => {
+      const tristogram = new Tristogram(mockPixelData, { algorithm: 'legacy' });
       
       expect(tristogram.tristogram).toBeDefined();
-      expect(tristogram.tristogram.length).toBe(256);
-      expect(tristogram.tristogram[0].length).toBe(256);
-      expect(tristogram.tristogram[0][0].length).toBe(256);
+      expect(tristogram.tristogram!.length).toBe(256);
+      expect(tristogram.tristogram![0].length).toBe(256);
+      expect(tristogram.tristogram![0][0].length).toBe(256);
     });
 
     it('should analyze image data and populate histogram', () => {
@@ -170,6 +170,77 @@ describe('Tristogram', () => {
 
       const pixel = Tristogram.getPixel(pixelData, 0, 0);
       expect(pixel).toEqual({ r: 128, g: 64, b: 32, a: 16 });
+    });
+  });
+
+  describe('algorithm comparison', () => {
+    it('should produce equivalent results between legacy and single-pass algorithms', () => {
+      const legacyTristogram = new Tristogram(mockPixelData, { algorithm: 'legacy' });
+      const singlePassTristogram = new Tristogram(mockPixelData, { algorithm: 'single-pass' });
+
+      // Basic properties should match
+      expect(singlePassTristogram.nonZeroCount).toBe(legacyTristogram.nonZeroCount);
+      expect(singlePassTristogram.maxValue).toBe(legacyTristogram.maxValue);
+      expect(singlePassTristogram.totalCount).toBe(legacyTristogram.totalCount);
+
+      // Arrays should have same length
+      expect(singlePassTristogram.positions.length).toBe(legacyTristogram.positions.length);
+      expect(singlePassTristogram.values.length).toBe(legacyTristogram.values.length);
+      expect(singlePassTristogram.colors.length).toBe(legacyTristogram.colors.length);
+
+      // Convert to sorted arrays for comparison (since order might differ)
+      const legacyData = [];
+      const singlePassData = [];
+
+      for (let i = 0; i < legacyTristogram.values.length; i++) {
+        legacyData.push({
+          r: legacyTristogram.positions[i * 3],
+          g: legacyTristogram.positions[i * 3 + 1], 
+          b: legacyTristogram.positions[i * 3 + 2],
+          value: legacyTristogram.values[i],
+          alpha: legacyTristogram.colors[i * 4 + 3]
+        });
+      }
+
+      for (let i = 0; i < singlePassTristogram.values.length; i++) {
+        singlePassData.push({
+          r: singlePassTristogram.positions[i * 3],
+          g: singlePassTristogram.positions[i * 3 + 1],
+          b: singlePassTristogram.positions[i * 3 + 2], 
+          value: singlePassTristogram.values[i],
+          alpha: singlePassTristogram.colors[i * 4 + 3]
+        });
+      }
+
+      // Sort both arrays by RGB values for comparison
+      const sortFn = (a: any, b: any) => {
+        if (a.r !== b.r) return a.r - b.r;
+        if (a.g !== b.g) return a.g - b.g;
+        return a.b - b.b;
+      };
+
+      legacyData.sort(sortFn);
+      singlePassData.sort(sortFn);
+
+      // Compare each entry
+      expect(singlePassData).toEqual(legacyData);
+    });
+
+    it('should default to single-pass algorithm when no option specified', () => {
+      const defaultTristogram = new Tristogram(mockPixelData);
+      const explicitSinglePass = new Tristogram(mockPixelData, { algorithm: 'single-pass' });
+
+      expect(defaultTristogram.nonZeroCount).toBe(explicitSinglePass.nonZeroCount);
+      expect(defaultTristogram.maxValue).toBe(explicitSinglePass.maxValue);
+      expect(defaultTristogram.positions.length).toBe(explicitSinglePass.positions.length);
+    });
+
+    it('should only create tristogram 3D array for legacy algorithm', () => {
+      const legacyTristogram = new Tristogram(mockPixelData, { algorithm: 'legacy' });
+      const singlePassTristogram = new Tristogram(mockPixelData, { algorithm: 'single-pass' });
+
+      expect(legacyTristogram.tristogram).toBeDefined();
+      expect(singlePassTristogram.tristogram).toBeUndefined();
     });
   });
 });

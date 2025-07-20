@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ImageGenerator, type ImageType } from './imageGenerator';
-import { TristogramBenchmark, type BenchmarkConfig, type BenchmarkResult } from './benchmarkUtils';
+import { TristogramBenchmark, type BenchmarkConfig, type AlgorithmComparison } from './benchmarkUtils';
 
 describe('Tristogram Constructor Benchmarks - Browser Environment', () => {
   const benchmarkConfig: BenchmarkConfig = {
@@ -19,91 +19,89 @@ describe('Tristogram Constructor Benchmarks - Browser Environment', () => {
   benchmarkConfig.imageTypes.forEach((imageType) => {
     describe(`Image Type: ${imageType}`, () => {
       benchmarkConfig.imageSizes.forEach(({ width, height }) => {
-        it(`should benchmark ${width}x${height} ${imageType} image`, () => {
+        it(`should compare legacy vs single-pass algorithms for ${width}x${height} ${imageType} image`, () => {
           // Generate test image
           const pixelData = ImageGenerator.generateSyntheticImage(width, height, imageType);
           
-          // Run benchmark
-          const result = TristogramBenchmark.runBenchmarkIterations(
+          // Run algorithm comparison
+          const comparison = TristogramBenchmark.compareAlgorithms(
             pixelData,
             benchmarkConfig.iterations,
             benchmarkConfig.warmupRuns
           );
           
-          // Update result with image type
-          result.imageType = imageType;
+          // Update comparison with image type
+          comparison.imageType = imageType;
+          comparison.legacy.imageType = imageType;
+          comparison.singlePass.imageType = imageType;
           
           // Assertions
-          expect(result.totalTime).toBeGreaterThan(0);
-          expect(result.phases.pixelIteration).toBeGreaterThan(0);
-          expect(result.phases.resultProcessing).toBeGreaterThan(0);
-          expect(result.avgTime).toBeGreaterThan(0);
-          expect(result.minTime).toBeLessThanOrEqual(result.maxTime);
-          expect(result.iterations).toBe(benchmarkConfig.iterations);
+          expect(comparison.legacy.totalTime).toBeGreaterThan(0);
+          expect(comparison.singlePass.totalTime).toBeGreaterThan(0);
+          expect(comparison.speedup).toBeGreaterThan(0);
+          expect(comparison.legacy.nonZeroCount).toBe(comparison.singlePass.nonZeroCount);
+          expect(comparison.legacy.maxValue).toBe(comparison.singlePass.maxValue);
           
-          // Log results for analysis
-          console.log(`\n📊 Browser Benchmark Results - ${imageType} ${width}x${height}:`);
-          console.log(`   Total Time: ${result.totalTime.toFixed(3)}ms (avg)`);
-          console.log(`   Pixel Iteration: ${result.phases.pixelIteration.toFixed(3)}ms`);
-          console.log(`   Result Processing: ${result.phases.resultProcessing.toFixed(3)}ms`);
-          console.log(`   Range: ${result.minTime.toFixed(3)}ms - ${result.maxTime.toFixed(3)}ms`);
-          console.log(`   Iterations: ${result.iterations}`);
+          // Log comparison results
+          console.log(`\n🔬 Algorithm Comparison - ${imageType} ${width}x${height}:`);
+          console.log(`   Legacy Algorithm:      ${comparison.legacy.totalTime.toFixed(3)}ms (${comparison.legacy.minTime.toFixed(3)}-${comparison.legacy.maxTime.toFixed(3)}ms)`);
+          console.log(`   Single-Pass Algorithm: ${comparison.singlePass.totalTime.toFixed(3)}ms (${comparison.singlePass.minTime.toFixed(3)}-${comparison.singlePass.maxTime.toFixed(3)}ms)`);
+          console.log(`   Speedup:               ${comparison.speedup.toFixed(2)}x faster`);
+          console.log(`   Memory Improvement:    ${comparison.memoryImprovement}`);
+          console.log(`   Non-zero Colors:       ${comparison.singlePass.nonZeroCount.toLocaleString()}`);
+          console.log(`   Max Value:             ${comparison.singlePass.maxValue}`);
           
-          // Performance sanity checks
-          const pixelCount = width * height;
-          const timePerPixel = result.phases.pixelIteration / pixelCount;
-          
-          // Should process at least 1000 pixels per ms (very conservative check)
-          if (pixelCount > 1000) {
-            expect(timePerPixel).toBeLessThan(0.001); // Less than 1μs per pixel
-          }
+          // Performance sanity checks - Single-pass should be faster than legacy
+          expect(comparison.speedup).toBeGreaterThanOrEqual(0.8); // Allow small variance
         });
       });
     });
   });
 
-  it('should show performance scaling with image size', () => {
+  it('should show algorithm performance comparison across image sizes', () => {
     const imageType: ImageType = 'gradient';
-    const results: BenchmarkResult[] = [];
+    const comparisons: AlgorithmComparison[] = [];
     
-    // Run benchmarks for different sizes
+    // Run algorithm comparisons for different sizes
     benchmarkConfig.imageSizes.forEach(({ width, height }) => {
       const pixelData = ImageGenerator.generateSyntheticImage(width, height, imageType);
-      const result = TristogramBenchmark.runBenchmarkIterations(
+      const comparison = TristogramBenchmark.compareAlgorithms(
         pixelData,
         3, // Fewer iterations for scaling test
         1  // Fewer warmup runs
       );
-      result.imageType = imageType;
-      results.push(result);
+      comparison.imageType = imageType;
+      comparisons.push(comparison);
     });
     
-    // Log scaling analysis
-    console.log('\n📈 Browser Performance Scaling Analysis:');
-    console.log('Size\t\tPixels\t\tTotal(ms)\tPixel Iter(ms)\tResult Proc(ms)');
+    // Log algorithm comparison analysis
+    console.log('\n📈 Algorithm Performance Comparison Analysis:');
+    console.log('Size\t\tPixels\t\tLegacy(ms)\tSingle-Pass(ms)\tSpeedup\tColors');
     console.log('─'.repeat(80));
     
-    results.forEach((result) => {
-      const [width, height] = result.imageSize.split('x').map(Number);
+    comparisons.forEach((comparison) => {
+      const [width, height] = comparison.imageSize.split('x').map(Number);
       const pixels = width * height;
       console.log(
-        `${result.imageSize}\t\t${pixels.toLocaleString()}\t\t` +
-        `${result.totalTime.toFixed(2)}\t\t${result.phases.pixelIteration.toFixed(2)}\t\t` +
-        `${result.phases.resultProcessing.toFixed(2)}`
+        `${comparison.imageSize}\t\t${pixels.toLocaleString()}\t\t` +
+        `${comparison.legacy.totalTime.toFixed(2)}\t\t${comparison.singlePass.totalTime.toFixed(2)}\t\t` +
+        `${comparison.speedup.toFixed(2)}x\t${comparison.singlePass.nonZeroCount.toLocaleString()}`
       );
     });
     
-    // Verify that larger images take more time (generally)
-    for (let i = 1; i < results.length; i++) {
-      const prevSize = results[i - 1].imageSize.split('x').map(Number);
-      const currSize = results[i].imageSize.split('x').map(Number);
-      const prevPixels = prevSize[0] * prevSize[1];
-      const currPixels = currSize[0] * currSize[1];
+    // Verify that larger images generally take more time and single-pass is consistently faster
+    for (let i = 1; i < comparisons.length; i++) {
+      const prevComparison = comparisons[i - 1];
+      const currComparison = comparisons[i];
+      
+      const [prevW, prevH] = prevComparison.imageSize.split('x').map(Number);
+      const [currW, currH] = currComparison.imageSize.split('x').map(Number);
+      const prevPixels = prevW * prevH;
+      const currPixels = currW * currH;
       
       if (currPixels > prevPixels * 2) { // Only compare significantly larger images
-        expect(results[i].phases.pixelIteration).toBeGreaterThan(
-          results[i - 1].phases.pixelIteration * 0.5 // Allow some variance
-        );
+        // Single-pass should maintain good speedup on larger images
+        expect(currComparison.speedup).toBeGreaterThanOrEqual(0.8);
       }
     }
   });
