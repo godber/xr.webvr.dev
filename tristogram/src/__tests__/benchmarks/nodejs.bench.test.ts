@@ -78,7 +78,7 @@ describe('Tristogram Constructor Benchmarks - Node.js Environment', () => {
           if (pixelCount > 1000) {
             expect(timePerPixel).toBeLessThan(0.001); // Less than 1μs per pixel
           }
-        });
+        }, 30000); // 30 second timeout for benchmark tests
       });
     });
   });
@@ -133,7 +133,7 @@ describe('Tristogram Constructor Benchmarks - Node.js Environment', () => {
         );
       }
     }
-  });
+  }, 30000); // 30 second timeout for scaling analysis
 
   it('should compare Node.js vs Browser performance characteristics', () => {
     // Skip in browser environment
@@ -166,5 +166,5 @@ describe('Tristogram Constructor Benchmarks - Node.js Environment', () => {
     expect(result.totalTime).toBeGreaterThan(0);
     expect(result.phases.pixelIteration).toBeGreaterThan(0);
     expect(result.phases.resultProcessing).toBeGreaterThan(0);
-  });
+  }, 30000); // 30 second timeout for comparison test
 });

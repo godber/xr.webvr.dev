@@ -53,7 +53,7 @@ describe('Tristogram Constructor Benchmarks - Browser Environment', () => {
           
           // Performance sanity checks - Single-pass should be faster than legacy
           expect(comparison.speedup).toBeGreaterThanOrEqual(0.8); // Allow small variance
-        });
+        }, 30000); // 30 second timeout for benchmark tests
       });
     });
   });
@@ -104,5 +104,5 @@ describe('Tristogram Constructor Benchmarks - Browser Environment', () => {
         expect(currComparison.speedup).toBeGreaterThanOrEqual(0.8);
       }
     }
-  });
+  }, 30000); // 30 second timeout for scaling analysis
 });
