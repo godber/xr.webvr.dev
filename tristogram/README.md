@@ -22,6 +22,110 @@ The tristogram analyzes each pixel in an image and maps it to a 3D coordinate sy
 
 Each point's opacity corresponds to how frequently that color appears in the image.
 
+## Pixel Source Tracking
+
+The Tristogram class provides complete traceability from each color point back to its source pixels in the original image through the `pixelSources` property.
+
+### **How Pixel Sources Work**
+
+When analyzing an image, the Tristogram tracks not only how many pixels of each color exist, but also remembers the exact `{x, y}` coordinates of every pixel that contributed to each color count.
+
+```javascript
+const tristogram = new Tristogram(imageData);
+
+// For each tristogram point:
+console.log(tristogram.values[0]);        // Number of pixels (e.g., 5)
+console.log(tristogram.pixelSources[0]);  // Array of 5 {x, y} coordinates
+```
+
+### **Data Structure**
+
+- **`pixelSources`**: Array of coordinate arrays, where each sub-array contains all `{x, y}` coordinates for a specific tristogram point
+- **Guaranteed consistency**: `tristogram.values[i] === tristogram.pixelSources[i].length`
+- **Available in both algorithms**: Works with both `legacy` and `single-pass` processing modes
+
+### **Usage Examples**
+
+#### **Basic Pixel Lookup**
+
+```javascript
+const tristogram = new Tristogram(imageData);
+
+// Find all pixels that are pure red (255, 0, 0)
+for (let i = 0; i < tristogram.values.length; i++) {
+  const r = tristogram.positions[i * 3];
+  const g = tristogram.positions[i * 3 + 1]; 
+  const b = tristogram.positions[i * 3 + 2];
+  
+  if (r === 255 && g === 0 && b === 0) {
+    console.log(`Found ${tristogram.values[i]} red pixels at:`, 
+                tristogram.pixelSources[i]);
+    // Output: [{x: 10, y: 5}, {x: 25, y: 12}, ...]
+  }
+}
+```
+
+#### **Color Analysis with Source Mapping**
+
+```javascript
+// Find the most common color and its source locations
+const maxIndex = tristogram.values.indexOf(tristogram.maxValue);
+const dominantColor = {
+  r: tristogram.positions[maxIndex * 3],
+  g: tristogram.positions[maxIndex * 3 + 1],
+  b: tristogram.positions[maxIndex * 3 + 2],
+  count: tristogram.values[maxIndex],
+  sourcePixels: tristogram.pixelSources[maxIndex]
+};
+
+console.log(`Dominant color RGB(${dominantColor.r}, ${dominantColor.g}, ${dominantColor.b})`);
+console.log(`Appears ${dominantColor.count} times at:`, dominantColor.sourcePixels);
+```
+
+#### **Interactive Pixel Highlighting**
+
+```javascript
+// Create a clickable tristogram visualization
+function onTristogramPointClick(pointIndex) {
+  const sourcePixels = tristogram.pixelSources[pointIndex];
+  
+  // Highlight corresponding pixels in the original image
+  sourcePixels.forEach(({x, y}) => {
+    highlightPixelOnCanvas(x, y);
+  });
+}
+```
+
+#### **Color Region Analysis**
+
+```javascript
+// Find all dark pixels (RGB values < 50) and their locations
+const darkPixels = [];
+
+for (let i = 0; i < tristogram.values.length; i++) {
+  const r = tristogram.positions[i * 3];
+  const g = tristogram.positions[i * 3 + 1];
+  const b = tristogram.positions[i * 3 + 2];
+  
+  if (r < 50 && g < 50 && b < 50) {
+    darkPixels.push({
+      color: {r, g, b},
+      count: tristogram.values[i],
+      pixels: tristogram.pixelSources[i]
+    });
+  }
+}
+
+console.log(`Found ${darkPixels.length} dark color groups`);
+console.log(`Total dark pixels: ${darkPixels.reduce((sum, group) => sum + group.count, 0)}`);
+```
+
+### **Performance Considerations**
+
+- **Memory usage**: Storing pixel coordinates significantly increases memory consumption (approximately 8 bytes per pixel)
+- **Large images**: For high-resolution images, consider the memory impact when using pixel source tracking
+- **Both algorithms**: Performance characteristics remain similar between `legacy` and `single-pass` modes
+
 ## Usage
 
 1. **Install dependencies**:
