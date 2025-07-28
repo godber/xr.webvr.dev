@@ -5,10 +5,14 @@ A 3D color histogram visualization tool built with React Three Fiber that create
 ## Features
 
 - **3D Color Space Visualization**: Displays colors as points in a 3D RGB cube (256x256x256)
+- **Dual Visualization Modes**: 
+  - **Opacity Mode**: Point transparency represents color frequency
+  - **Point Size Mode**: Variable point sizes represent color frequency using custom shaders
+- **Advanced Frequency Filtering**: Bidirectional min/max threshold sliders to reduce visual occlusion
 - **React Three Fiber Integration**: Modern React declarative 3D scene composition
 - **Interactive Controls**: Rotate, zoom, and pan around the color histogram using OrbitControls
 - **Multiple Image Support**: Built-in gallery of test images plus drag-and-drop support
-- **Real-time Adjustments**: Modify point size and background color using Leva GUI controls
+- **Real-time Adjustments**: Dynamic control over visualization mode, point scaling, frequency filtering, and background color
 - **Source Image Display**: Shows the original image alongside the 3D histogram
 - **Component-based Architecture**: Clean React components with proper state management
 
@@ -20,7 +24,24 @@ The tristogram analyzes each pixel in an image and maps it to a 3D coordinate sy
 - Y-axis represents Green values (0-255) 
 - Z-axis represents Blue values (0-255)
 
-Each point's opacity corresponds to how frequently that color appears in the image.
+Each point's visual representation corresponds to how frequently that color appears in the image:
+
+- **Opacity Mode**: More frequent colors appear more opaque, less frequent colors are more transparent
+- **Point Size Mode**: More frequent colors appear as larger points, less frequent colors as smaller points
+
+## Frequency Filtering
+
+The application includes advanced filtering capabilities to reduce visual occlusion and focus on specific color frequency ranges:
+
+- **Min Frequency Threshold**: Hide colors that appear less frequently than this threshold (0.0 = show all, 1.0 = show only the most frequent)
+- **Max Frequency Threshold**: Hide colors that appear more frequently than this threshold (1.0 = show all, 0.0 = hide all)
+
+### Filtering Examples
+
+- **Focus on rare colors**: Set Max Frequency to 0.3 to hide dominant colors and reveal rare ones
+- **Focus on common colors**: Set Min Frequency to 0.7 to show only very frequent colors
+- **Mid-range window**: Set Min: 0.2, Max: 0.6 to show colors of moderate frequency
+- **Remove noise**: Set Min Frequency > 0.0 to filter out single-pixel artifacts
 
 ## Pixel Source Tracking
 
@@ -255,7 +276,12 @@ The benchmarks show that:
 
 - **Mouse**: Orbit around the visualization (via OrbitControls)
 - **Scroll**: Zoom in/out
-- **Leva GUI Panel**: Change images, adjust point size, and background color
+- **Leva GUI Panel**: 
+  - **Image Selection**: Choose from built-in gallery of test images
+  - **Visualization Mode**: Switch between opacity and point size modes
+  - **Point Size**: Scale factor for point sizes (base size in opacity mode, multiplier in size mode)
+  - **Min/Max Frequency**: Bidirectional filtering to show/hide colors based on frequency thresholds
+  - **Background**: Adjust background color for better contrast
 - **Drag & Drop**: Drop image files directly onto the canvas to analyze new images
 
 ## Dependencies
