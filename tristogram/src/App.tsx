@@ -12,6 +12,7 @@ interface TristogramVisualizationProps {
 interface ImageData {
   positions: Float32Array;
   colors: Float32Array;
+  sizes: Float32Array;
 }
 
 extend({ OrbitControls });
@@ -28,37 +29,57 @@ function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationPro
   
   const [imageData, setImageData] = useState<ImageData | null>(null);
   const [imageTexture, setImageTexture] = useState<THREE.Texture | null>(null);
+  const [tristogramInstance, setTristogramInstance] = useState<Tristogram | null>(null);
 
   const { 
     image, 
     pointSize, 
-    background 
+    background,
+    visualizationMode,
+    minThreshold,
+    maxThreshold
   } = useControls({
     image: {
-      value: '/images/wallaby_746_600x450.jpg',
+      value: './images/wallaby_746_600x450.jpg',
       options: {
-        glitchGray: '/images/glitch-art-phone-gray.jpg',
-        glitchRed: '/images/glitch-art-phone-r.jpg',
-        glitchRB: '/images/glitch-art-phone-rb.jpg',
-        glitchRGB: '/images/glitch-art-phone-rbg.jpg',
-        glitchR: '/images/glitch-art-phone-red.jpg',
-        godberGlitch: '/images/godber-glitch.jpg',
-        godber: '/images/godber.jpg',
-        rainbow: '/images/rainbow.png',
-        gray: '/images/grayscale.png',
-        blue: '/images/blue-black-gradient.png',
-        green: '/images/green-black-gradient.png',
-        red: '/images/red-black-gradient.png',
-        wallaby: '/images/wallaby_746_600x450.jpg',
+        glitchGray: './images/glitch-art-phone-gray.jpg',
+        glitchRed: './images/glitch-art-phone-r.jpg',
+        glitchRB: './images/glitch-art-phone-rb.jpg',
+        glitchRGB: './images/glitch-art-phone-rbg.jpg',
+        glitchR: './images/glitch-art-phone-red.jpg',
+        godberGlitch: './images/godber-glitch.jpg',
+        godber: './images/godber.jpg',
+        rainbow: './images/rainbow.png',
+        gray: './images/grayscale.png',
+        blue: './images/blue-black-gradient.png',
+        green: './images/green-black-gradient.png',
+        red: './images/red-black-gradient.png',
+        wallaby: './images/wallaby_746_600x450.jpg',
+      }
+    },
+    visualizationMode: {
+      value: 'opacity',
+      options: {
+        'Opacity': 'opacity',
+        'Point Size': 'size'
       }
     },
     pointSize: { value: 1, min: 1, max: 20, step: 1 },
+    minThreshold: { value: 0.0, min: 0.0, max: 1.0, step: 0.01, label: 'Min Frequency' },
+    maxThreshold: { value: 1.0, min: 0.0, max: 1.0, step: 0.01, label: 'Max Frequency' },
     background: '#111111'
   });
 
   React.useEffect(() => {
     scene.background = new THREE.Color(background);
   }, [background, scene]);
+
+  // Update shader uniform when pointSize changes
+  React.useEffect(() => {
+    if (pointsRef.current && pointsRef.current.material instanceof THREE.ShaderMaterial) {
+      pointsRef.current.material.uniforms.sizeScale.value = pointSize;
+    }
+  }, [pointSize]);
 
   const currentImageUrl = droppedImageUrl || image;
 
@@ -67,8 +88,10 @@ function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationPro
     loader.load(
       currentImageUrl,
       (texture) => {
-        const tristogram = Tristogram.fromHTMLImage(texture.image);
-        setImageData(tristogram);
+        const tristogram = Tristogram.fromHTMLImage(texture.image, { 
+          visualizationMode: visualizationMode as 'opacity' | 'size' 
+        });
+        setTristogramInstance(tristogram);
         setImageTexture(texture);
       },
       undefined,
@@ -76,7 +99,18 @@ function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationPro
         console.error('Error loading image:', error);
       }
     );
-  }, [currentImageUrl]);
+  }, [currentImageUrl, visualizationMode]);
+
+  // Update filtered data when thresholds change
+  React.useEffect(() => {
+    if (tristogramInstance) {
+      // Ensure min <= max
+      const min = Math.min(minThreshold, maxThreshold);
+      const max = Math.max(minThreshold, maxThreshold);
+      const filteredData = tristogramInstance.getFilteredData(min, max);
+      setImageData(filteredData);
+    }
+  }, [tristogramInstance, minThreshold, maxThreshold]);
 
   const pointsGeometry = useMemo((): THREE.BufferGeometry | null => {
     if (!imageData) return null;
@@ -84,17 +118,55 @@ function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationPro
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(imageData.positions, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(imageData.colors, 4));
+    
+    // Add size attribute for variable point sizes
+    if (visualizationMode === 'size') {
+      geometry.setAttribute('size', new THREE.Float32BufferAttribute(imageData.sizes, 1));
+    }
+    
     return geometry;
-  }, [imageData]);
+  }, [imageData, visualizationMode]);
 
-  const pointsMaterial = useMemo((): THREE.PointsMaterial => {
-    return new THREE.PointsMaterial({
-      size: pointSize,
-      vertexColors: true,
-      transparent: true,
-      sizeAttenuation: true,
-    });
-  }, [pointSize]);
+  const pointsMaterial = useMemo((): THREE.PointsMaterial | THREE.ShaderMaterial => {
+    if (visualizationMode === 'size') {
+      // Custom shader material for variable point sizes
+      return new THREE.ShaderMaterial({
+        uniforms: {
+          sizeScale: { value: pointSize }
+        },
+        vertexShader: `
+          uniform float sizeScale;
+          attribute float size;
+          attribute vec4 color;
+          varying vec4 vColor;
+          
+          void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = size * sizeScale;
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          varying vec4 vColor;
+          
+          void main() {
+            vec2 center = gl_PointCoord - vec2(0.5);
+            if (length(center) > 0.5) discard;
+            gl_FragColor = vColor;
+          }
+        `,
+        transparent: true,
+      });
+    } else {
+      return new THREE.PointsMaterial({
+        size: pointSize,
+        vertexColors: true,
+        transparent: true,
+        sizeAttenuation: true,
+      });
+    }
+  }, [pointSize, visualizationMode]);
 
   const imageGeometry = useMemo((): THREE.PlaneGeometry | null => {
     if (!imageTexture) return null;
