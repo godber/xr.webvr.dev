@@ -153,10 +153,22 @@ The project includes comprehensive test suites and performance benchmarks:
 ### **Running Tests**
 
 ```bash
-npm run test          # Run all tests
+npm run test          # Run core tests (excludes benchmarks)
 npm run test:coverage # Run tests with coverage report
 npm run test:ui       # Run tests with interactive UI
 ```
+
+### **Running Performance Benchmarks**
+
+Performance benchmarks are excluded from default test runs to avoid CI timeouts, but can be run separately:
+
+```bash
+npm run test:bench           # Run all benchmarks (browser + Node.js)
+npm run test:bench:browser   # Run browser environment benchmarks only
+npm run test:bench:node      # Run Node.js environment benchmarks only
+```
+
+**Note**: Benchmark tests are memory-intensive and take several minutes to complete. They compare the legacy vs single-pass algorithms across different image types and sizes, providing detailed performance analysis.
 
 ### **Performance Benchmarks**
 
