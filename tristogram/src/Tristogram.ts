@@ -13,6 +13,7 @@ interface PixelData {
 
 interface TristogramOptions {
   algorithm?: 'legacy' | 'single-pass';
+  visualizationMode?: 'opacity' | 'size';
 }
 
 /**
@@ -27,9 +28,11 @@ class Tristogram {
   positions: Float32Array;
   values: number[];
   colors: Float32Array;
+  sizes: Float32Array;
   pixelSources: {x: number, y: number}[][];
   tristogram?: {x: number, y: number}[][][];
   imageData: PixelData;
+  visualizationMode: 'opacity' | 'size';
 
   /**
    * Creates a new Tristogram instance and analyzes the provided pixel data
@@ -41,6 +44,7 @@ class Tristogram {
     this.maxValue = 0;
     this.values = [];
     this.pixelSources = [];
+    this.visualizationMode = options.visualizationMode || 'opacity';
     
     const algorithm = options.algorithm || 'single-pass';
     
@@ -92,12 +96,24 @@ class Tristogram {
 
     this.positions = new Float32Array(positions);
     this.colors = new Float32Array(this.values.length * 4);
+    this.sizes = new Float32Array(this.values.length);
+    
     for (let i = 0; i < this.values.length; i += 1) {
       const t = this.values[i] / this.maxValue;
-      this.colors[4 * i] = 1;
-      this.colors[4 * i + 1] = 1;
-      this.colors[4 * i + 2] = 1;
-      this.colors[4 * i + 3] = t;
+      
+      if (this.visualizationMode === 'size') {
+        this.colors[4 * i] = 1;
+        this.colors[4 * i + 1] = 1;
+        this.colors[4 * i + 2] = 1;
+        this.colors[4 * i + 3] = 1;
+        this.sizes[i] = 1 + t * 19; // Size range 1-20
+      } else {
+        this.colors[4 * i] = 1;
+        this.colors[4 * i + 1] = 1;
+        this.colors[4 * i + 2] = 1;
+        this.colors[4 * i + 3] = t;
+        this.sizes[i] = 1;
+      }
     }
   }
 
@@ -156,6 +172,7 @@ class Tristogram {
     this.positions = new Float32Array(size * 3);
     this.values = new Array(size);
     this.colors = new Float32Array(size * 4);
+    this.sizes = new Float32Array(size);
     this.pixelSources = new Array(size);
     
     this.nonZeroCount = size;
@@ -176,12 +193,21 @@ class Tristogram {
       // Pixel sources
       this.pixelSources[i] = entry.pixels;
       
-      // Colors (alpha based on frequency)
-      const alpha = entry.count / this.maxValue;
-      this.colors[i * 4] = 1;     // r
-      this.colors[i * 4 + 1] = 1; // g  
-      this.colors[i * 4 + 2] = 1; // b
-      this.colors[i * 4 + 3] = alpha; // a
+      // Colors and sizes based on visualization mode
+      const t = entry.count / this.maxValue;
+      if (this.visualizationMode === 'size') {
+        this.colors[i * 4] = 1;     // r
+        this.colors[i * 4 + 1] = 1; // g  
+        this.colors[i * 4 + 2] = 1; // b
+        this.colors[i * 4 + 3] = 1; // a - full opacity
+        this.sizes[i] = 1 + t * 19; // Size range 1-20
+      } else {
+        this.colors[i * 4] = 1;     // r
+        this.colors[i * 4 + 1] = 1; // g  
+        this.colors[i * 4 + 2] = 1; // b
+        this.colors[i * 4 + 3] = t; // a - opacity based on frequency
+        this.sizes[i] = 1;
+      }
       
       i++;
     }
@@ -204,16 +230,16 @@ class Tristogram {
   /**
    * Factory method to create Tristogram from ImageData (browser)
    */
-  static fromImageData(imageData: ImageData): Tristogram {
-    return new Tristogram(imageData);
+  static fromImageData(imageData: ImageData, options?: TristogramOptions): Tristogram {
+    return new Tristogram(imageData, options);
   }
 
   /**
    * Factory method to create Tristogram from HTMLImageElement (browser)
    */
-  static fromHTMLImage(image: HTMLImageElement): Tristogram {
+  static fromHTMLImage(image: HTMLImageElement, options?: TristogramOptions): Tristogram {
     const imageData = Tristogram.getImageData(image);
-    return new Tristogram(imageData);
+    return new Tristogram(imageData, options);
   }
 
   /**
@@ -240,6 +266,53 @@ class Tristogram {
     } catch (error) {
       throw new Error(`Failed to load image from file: ${(error as Error).message}. Make sure 'sharp' is installed for Node.js usage.`);
     }
+  }
+
+  /**
+   * Creates filtered arrays based on frequency threshold range (0-1 range)
+   */
+  getFilteredData(minThreshold: number, maxThreshold: number = 1.0): {
+    positions: Float32Array;
+    colors: Float32Array;
+    sizes: Float32Array;
+    count: number;
+  } {
+    const minCount = Math.floor(minThreshold * this.maxValue);
+    const maxCount = Math.floor(maxThreshold * this.maxValue);
+    const filteredIndices: number[] = [];
+    
+    // Find indices that meet the threshold range
+    for (let i = 0; i < this.values.length; i++) {
+      if (this.values[i] >= minCount && this.values[i] <= maxCount) {
+        filteredIndices.push(i);
+      }
+    }
+    
+    const count = filteredIndices.length;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 4);
+    const sizes = new Float32Array(count);
+    
+    // Copy data for points that meet the threshold
+    for (let i = 0; i < count; i++) {
+      const originalIndex = filteredIndices[i];
+      
+      // Positions
+      positions[i * 3] = this.positions[originalIndex * 3];
+      positions[i * 3 + 1] = this.positions[originalIndex * 3 + 1];
+      positions[i * 3 + 2] = this.positions[originalIndex * 3 + 2];
+      
+      // Colors
+      colors[i * 4] = this.colors[originalIndex * 4];
+      colors[i * 4 + 1] = this.colors[originalIndex * 4 + 1];
+      colors[i * 4 + 2] = this.colors[originalIndex * 4 + 2];
+      colors[i * 4 + 3] = this.colors[originalIndex * 4 + 3];
+      
+      // Sizes
+      sizes[i] = this.sizes[originalIndex];
+    }
+    
+    return { positions, colors, sizes, count };
   }
 
   /**
