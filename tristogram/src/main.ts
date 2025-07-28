@@ -21,7 +21,7 @@ interface GuiSettings {
 }
 
 const guiSettings: GuiSettings = {
-  image: '/images/wallaby_746_600x450.jpg',
+  image: './images/wallaby_746_600x450.jpg',
   background: 0x111111,
   pointSize: 1,
 };
@@ -36,19 +36,19 @@ animate();
 function guiInit(): void {
   const gui = new GUI();
   gui.add(guiSettings, 'image', {
-    glitchGray: '/images/glitch-art-phone-gray.jpg',
-    glitchRed: '/images/glitch-art-phone-r.jpg',
-    glitchRB: '/images/glitch-art-phone-rb.jpg',
-    glitchRGB: '/images/glitch-art-phone-rbg.jpg',
-    glitchR: '/images/glitch-art-phone-red.jpg',
-    godberGlitch: '/images/godber-glitch.jpg',
-    godber: '/images/godber.jpg',
-    rainbow: '/images/rainbow.png',
-    gray: '/images/grayscale.png',
-    blue: '/images/blue-black-gradient.png',
-    green: '/images/green-black-gradient.png',
-    red: '/images/red-black-gradient.png',
-    wallaby: '/images/wallaby_746_600x450.jpg',
+    glitchGray: './images/glitch-art-phone-gray.jpg',
+    glitchRed: './images/glitch-art-phone-r.jpg',
+    glitchRB: './images/glitch-art-phone-rb.jpg',
+    glitchRGB: './images/glitch-art-phone-rbg.jpg',
+    glitchR: './images/glitch-art-phone-red.jpg',
+    godberGlitch: './images/godber-glitch.jpg',
+    godber: './images/godber.jpg',
+    rainbow: './images/rainbow.png',
+    gray: './images/grayscale.png',
+    blue: './images/blue-black-gradient.png',
+    green: './images/green-black-gradient.png',
+    red: './images/red-black-gradient.png',
+    wallaby: './images/wallaby_746_600x450.jpg',
   }).name('Image');
   gui.add(guiSettings, 'pointSize', 1, 20, 1).name('Point Size');
   gui.addColor(guiSettings, 'background').name('Background');

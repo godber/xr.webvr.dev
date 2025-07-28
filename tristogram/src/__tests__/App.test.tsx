@@ -42,7 +42,7 @@ vi.mock('@react-three/drei', () => ({
 // Mock Leva
 vi.mock('leva', () => ({
   useControls: () => ({
-    image: '/images/wallaby_746_600x450.jpg',
+    image: './images/wallaby_746_600x450.jpg',
     pointSize: 1,
     background: '#111111',
   }),

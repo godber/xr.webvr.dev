@@ -40,21 +40,21 @@ function TristogramVisualization({ droppedImageUrl }: TristogramVisualizationPro
     maxThreshold
   } = useControls({
     image: {
-      value: '/images/wallaby_746_600x450.jpg',
+      value: './images/wallaby_746_600x450.jpg',
       options: {
-        glitchGray: '/images/glitch-art-phone-gray.jpg',
-        glitchRed: '/images/glitch-art-phone-r.jpg',
-        glitchRB: '/images/glitch-art-phone-rb.jpg',
-        glitchRGB: '/images/glitch-art-phone-rbg.jpg',
-        glitchR: '/images/glitch-art-phone-red.jpg',
-        godberGlitch: '/images/godber-glitch.jpg',
-        godber: '/images/godber.jpg',
-        rainbow: '/images/rainbow.png',
-        gray: '/images/grayscale.png',
-        blue: '/images/blue-black-gradient.png',
-        green: '/images/green-black-gradient.png',
-        red: '/images/red-black-gradient.png',
-        wallaby: '/images/wallaby_746_600x450.jpg',
+        glitchGray: './images/glitch-art-phone-gray.jpg',
+        glitchRed: './images/glitch-art-phone-r.jpg',
+        glitchRB: './images/glitch-art-phone-rb.jpg',
+        glitchRGB: './images/glitch-art-phone-rbg.jpg',
+        glitchR: './images/glitch-art-phone-red.jpg',
+        godberGlitch: './images/godber-glitch.jpg',
+        godber: './images/godber.jpg',
+        rainbow: './images/rainbow.png',
+        gray: './images/grayscale.png',
+        blue: './images/blue-black-gradient.png',
+        green: './images/green-black-gradient.png',
+        red: './images/red-black-gradient.png',
+        wallaby: './images/wallaby_746_600x450.jpg',
       }
     },
     visualizationMode: {
