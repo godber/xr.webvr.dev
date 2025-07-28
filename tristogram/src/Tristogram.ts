@@ -27,7 +27,8 @@ class Tristogram {
   positions: Float32Array;
   values: number[];
   colors: Float32Array;
-  tristogram?: number[][][];
+  pixelSources: {x: number, y: number}[][];
+  tristogram?: {x: number, y: number}[][][];
   imageData: PixelData;
 
   /**
@@ -39,6 +40,7 @@ class Tristogram {
     this.totalCount = 0;
     this.maxValue = 0;
     this.values = [];
+    this.pixelSources = [];
     
     const algorithm = options.algorithm || 'single-pass';
     
@@ -55,30 +57,33 @@ class Tristogram {
   private buildLegacy(pixelData: PixelData): void {
     const positions: number[] = [];
     this.values = [];
+    this.pixelSources = [];
 
     this.tristogram = Array(256).fill().map(
       () => Array(256).fill().map(
-        () => Array(256).fill(0),
+        () => Array(256).fill().map(() => []),
       ),
     );
 
     for (let x = 0; x < pixelData.width; x++) {
       for (let y = 0; y < pixelData.height; y++) {
         const p = Tristogram.getPixel(pixelData, x, y);
-        this.tristogram[p.r][p.g][p.b] += 1;
+        this.tristogram[p.r][p.g][p.b].push({x, y});
       }
     }
 
     for (let r = 0; r < this.tristogram.length; r++) {
       for (let g = 0; g < this.tristogram[r].length; g++) {
         for (let b = 0; b < this.tristogram[r][g].length; b++) {
-          if (this.tristogram[r][g][b] !== 0) {
-            if (this.tristogram[r][g][b] > this.maxValue) {
-              this.maxValue = this.tristogram[r][g][b];
+          if (this.tristogram[r][g][b].length > 0) {
+            const count = this.tristogram[r][g][b].length;
+            if (count > this.maxValue) {
+              this.maxValue = count;
             }
             this.nonZeroCount++;
             positions.push(r, g, b);
-            this.values.push(this.tristogram[r][g][b]);
+            this.values.push(count);
+            this.pixelSources.push(this.tristogram[r][g][b]);
           }
           this.totalCount++;
         }
@@ -100,7 +105,7 @@ class Tristogram {
    * Single-pass algorithm - optimized version using Map-based sparse storage
    */
   private buildSinglePass(pixelData: PixelData): void {
-    const colorMap = new Map<number, number>();
+    const colorMap = new Map<number, {count: number, pixels: {x: number, y: number}[]}>();
     this.maxValue = 0;
 
     // Single pass: process each pixel once
@@ -109,12 +114,13 @@ class Tristogram {
         const pixel = Tristogram.getPixel(pixelData, x, y);
         const key = this.encodeRGB(pixel.r, pixel.g, pixel.b);
         
-        const count = colorMap.get(key) || 0;
-        const newCount = count + 1;
-        colorMap.set(key, newCount);
+        const entry = colorMap.get(key) || {count: 0, pixels: []};
+        entry.count += 1;
+        entry.pixels.push({x, y});
+        colorMap.set(key, entry);
         
-        if (newCount > this.maxValue) {
-          this.maxValue = newCount;
+        if (entry.count > this.maxValue) {
+          this.maxValue = entry.count;
         }
       }
     }
@@ -144,18 +150,19 @@ class Tristogram {
   /**
    * Builds final arrays directly from color map entries
    */
-  private buildArraysFromMap(colorMap: Map<number, number>): void {
+  private buildArraysFromMap(colorMap: Map<number, {count: number, pixels: {x: number, y: number}[]}>): void {
     const size = colorMap.size;
     
     this.positions = new Float32Array(size * 3);
     this.values = new Array(size);
     this.colors = new Float32Array(size * 4);
+    this.pixelSources = new Array(size);
     
     this.nonZeroCount = size;
     this.totalCount = 256 * 256 * 256;
     
     let i = 0;
-    for (const [encoded, count] of colorMap) {
+    for (const [encoded, entry] of colorMap) {
       const [r, g, b] = this.decodeRGB(encoded);
       
       // Positions
@@ -164,10 +171,13 @@ class Tristogram {
       this.positions[i * 3 + 2] = b;
       
       // Values
-      this.values[i] = count;
+      this.values[i] = entry.count;
+      
+      // Pixel sources
+      this.pixelSources[i] = entry.pixels;
       
       // Colors (alpha based on frequency)
-      const alpha = count / this.maxValue;
+      const alpha = entry.count / this.maxValue;
       this.colors[i * 4] = 1;     // r
       this.colors[i * 4 + 1] = 1; // g  
       this.colors[i * 4 + 2] = 1; // b

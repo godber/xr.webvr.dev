@@ -12,8 +12,9 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:bench:browser": "vitest run benchmarks/browser.bench.test.ts",
-    "test:bench:node": "vitest run --config vitest.node.config.js"
+    "test:bench:browser": "vitest run --config vitest.bench.config.js src/__tests__/benchmarks/browser.bench.test.ts",
+    "test:bench:node": "vitest run --config vitest.node.config.js",
+    "test:bench": "npm run test:bench:browser && npm run test:bench:node"
   },
   "dependencies": {
     "@react-three/drei": "^10.5.1",

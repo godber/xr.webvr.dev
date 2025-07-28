@@ -56,6 +56,7 @@ describe('Tristogram', () => {
       expect(tristogram.maxValue).toBe(1);
       expect(tristogram.positions.length).toBe(12); // 4 colors * 3 coordinates
       expect(tristogram.values.length).toBe(4);
+      expect(tristogram.pixelSources.length).toBe(4); // 4 color groups
     });
 
     it('should create color array with correct alpha values', () => {
@@ -84,6 +85,7 @@ describe('Tristogram', () => {
       expect(tristogram.nonZeroCount).toBe(1);
       expect(tristogram.positions).toEqual(new Float32Array([0, 0, 0]));
       expect(tristogram.values).toEqual([1]);
+      expect(tristogram.pixelSources[0]).toEqual([{x: 0, y: 0}]);
     });
   });
 
@@ -187,6 +189,7 @@ describe('Tristogram', () => {
       expect(singlePassTristogram.positions.length).toBe(legacyTristogram.positions.length);
       expect(singlePassTristogram.values.length).toBe(legacyTristogram.values.length);
       expect(singlePassTristogram.colors.length).toBe(legacyTristogram.colors.length);
+      expect(singlePassTristogram.pixelSources.length).toBe(legacyTristogram.pixelSources.length);
 
       // Convert to sorted arrays for comparison (since order might differ)
       const legacyData = [];
@@ -198,7 +201,8 @@ describe('Tristogram', () => {
           g: legacyTristogram.positions[i * 3 + 1], 
           b: legacyTristogram.positions[i * 3 + 2],
           value: legacyTristogram.values[i],
-          alpha: legacyTristogram.colors[i * 4 + 3]
+          alpha: legacyTristogram.colors[i * 4 + 3],
+          pixelCount: legacyTristogram.pixelSources[i].length
         });
       }
 
@@ -208,7 +212,8 @@ describe('Tristogram', () => {
           g: singlePassTristogram.positions[i * 3 + 1],
           b: singlePassTristogram.positions[i * 3 + 2], 
           value: singlePassTristogram.values[i],
-          alpha: singlePassTristogram.colors[i * 4 + 3]
+          alpha: singlePassTristogram.colors[i * 4 + 3],
+          pixelCount: singlePassTristogram.pixelSources[i].length
         });
       }
 
@@ -241,6 +246,92 @@ describe('Tristogram', () => {
 
       expect(legacyTristogram.tristogram).toBeDefined();
       expect(singlePassTristogram.tristogram).toBeUndefined();
+    });
+  });
+
+  describe('pixelSources functionality', () => {
+    it('should track pixel coordinates for each color in legacy algorithm', () => {
+      const tristogram = new Tristogram(mockPixelData, { algorithm: 'legacy' });
+      
+      expect(tristogram.pixelSources).toBeDefined();
+      expect(tristogram.pixelSources.length).toBe(4);
+      
+      // Each color should have exactly one pixel
+      for (let i = 0; i < tristogram.pixelSources.length; i++) {
+        expect(tristogram.pixelSources[i].length).toBe(1);
+        expect(tristogram.pixelSources[i][0]).toHaveProperty('x');
+        expect(tristogram.pixelSources[i][0]).toHaveProperty('y');
+        expect(typeof tristogram.pixelSources[i][0].x).toBe('number');
+        expect(typeof tristogram.pixelSources[i][0].y).toBe('number');
+      }
+    });
+
+    it('should track pixel coordinates for each color in single-pass algorithm', () => {
+      const tristogram = new Tristogram(mockPixelData, { algorithm: 'single-pass' });
+      
+      expect(tristogram.pixelSources).toBeDefined();
+      expect(tristogram.pixelSources.length).toBe(4);
+      
+      // Each color should have exactly one pixel
+      for (let i = 0; i < tristogram.pixelSources.length; i++) {
+        expect(tristogram.pixelSources[i].length).toBe(1);
+        expect(tristogram.pixelSources[i][0]).toHaveProperty('x');
+        expect(tristogram.pixelSources[i][0]).toHaveProperty('y');
+      }
+    });
+
+    it('should handle duplicate colors correctly', () => {
+      const duplicatePixelData = {
+        width: 2,
+        height: 1,
+        data: new Uint8ClampedArray([
+          255, 0, 0, 255,    // Red pixel at (0,0)
+          255, 0, 0, 255,    // Same red pixel at (1,0)
+        ]),
+      };
+
+      const tristogram = new Tristogram(duplicatePixelData);
+      
+      expect(tristogram.nonZeroCount).toBe(1); // Only one unique color
+      expect(tristogram.values[0]).toBe(2);    // But count is 2
+      expect(tristogram.pixelSources[0].length).toBe(2); // Two source pixels
+      expect(tristogram.pixelSources[0]).toEqual([
+        {x: 0, y: 0},
+        {x: 1, y: 0}
+      ]);
+    });
+
+    it('should maintain pixel count consistency between values and pixelSources', () => {
+      const tristogram = new Tristogram(mockPixelData);
+      
+      for (let i = 0; i < tristogram.values.length; i++) {
+        expect(tristogram.values[i]).toBe(tristogram.pixelSources[i].length);
+      }
+    });
+
+    it('should produce identical pixelSources between algorithms', () => {
+      const legacyTristogram = new Tristogram(mockPixelData, { algorithm: 'legacy' });
+      const singlePassTristogram = new Tristogram(mockPixelData, { algorithm: 'single-pass' });
+
+      // Create sorted maps for comparison
+      const legacyMap = new Map();
+      const singlePassMap = new Map();
+
+      for (let i = 0; i < legacyTristogram.values.length; i++) {
+        const key = `${legacyTristogram.positions[i * 3]},${legacyTristogram.positions[i * 3 + 1]},${legacyTristogram.positions[i * 3 + 2]}`;
+        legacyMap.set(key, legacyTristogram.pixelSources[i].sort((a, b) => a.x - b.x || a.y - b.y));
+      }
+
+      for (let i = 0; i < singlePassTristogram.values.length; i++) {
+        const key = `${singlePassTristogram.positions[i * 3]},${singlePassTristogram.positions[i * 3 + 1]},${singlePassTristogram.positions[i * 3 + 2]}`;
+        singlePassMap.set(key, singlePassTristogram.pixelSources[i].sort((a, b) => a.x - b.x || a.y - b.y));
+      }
+
+      // Compare each entry
+      for (const [key, legacyPixels] of legacyMap) {
+        expect(singlePassMap.has(key)).toBe(true);
+        expect(singlePassMap.get(key)).toEqual(legacyPixels);
+      }
     });
   });
 });
